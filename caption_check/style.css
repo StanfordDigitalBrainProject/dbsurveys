@@ -11,3 +11,6 @@
 .caption-check input[type=range] { width: 100%; }
 .caption-check [hidden] { display: none !important; }
 .caption-check .status { min-height: 1.6em; }
+
+.video-credits { max-height: 50vh; overflow-y: auto; text-align: left; overflow-wrap: anywhere; }
+.video-credits li { margin-bottom: 0.75em; }

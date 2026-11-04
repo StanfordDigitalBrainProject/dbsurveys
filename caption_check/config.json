@@ -15,10 +15,12 @@
       "experiment.js"
     ],
     "exp_id": "caption_check",
-    "contributors": ["Stanford Digital Brain Project"],
-    "time": 5,
+    "contributors": [
+      "Stanford Digital Brain Project"
+    ],
+    "time": 8,
     "reference": "https://github.com/StanfordDigitalBrainProject/dbsurveys",
-    "notes": "Synthetic interim preview; replace IRB placeholder and supply approved real stimuli before recruitment. Pipeline labels are unknown.",
+    "notes": "Real CC-BY excerpts with synthetic practice videos. Replace IRB placeholder before recruitment. Pipeline caption labels are unknown; see CREDITS.md.",
     "publish": "True"
   }
 ]
