@@ -1,31 +1,24 @@
 var captionCheck = (function () {
   function videoURL(path) {
-    var url = new URL(path, captionCheckAssetBase);
-    if (/^[a-z][a-z\d+.-]*:|^\/\//i.test(path) && url.protocol !== 'https:') {
-      throw new Error('Absolute video URLs must use HTTPS.');
-    }
-    if (!/^[a-z][a-z\d+.-]*:|^\/\//i.test(path) &&
-        !url.href.startsWith(captionCheckAssetBase)) {
-      throw new Error('Relative video paths must stay inside caption_check.');
-    }
-    if (url.username || url.password) throw new Error('Do not use credentialed video URLs.');
-    return url.href;
+    return new URL(path, captionCheckAssetBase).href;
   }
 
   function sample(stimuli, count, shuffle) {
-    var yes = shuffle(stimuli.filter(function (s) { return s.pipeline_caption_label === true; }));
-    var no = shuffle(stimuli.filter(function (s) { return s.pipeline_caption_label === false; }));
-    var unknown = shuffle(stimuli.filter(function (s) { return s.pipeline_caption_label === null; }));
-    var pairs = Math.min(Math.floor(count / 2), yes.length, no.length);
-    var chosen = yes.splice(0, pairs).concat(no.splice(0, pairs));
-    var needed = Math.max(0, count - chosen.length);
-    chosen = chosen.concat(unknown.splice(0, needed));
-    needed = Math.max(0, count - chosen.length);
-    chosen = chosen.concat(shuffle(yes.concat(no)).slice(0, needed));
-    var mode = pairs === Math.floor(count / 2) && count > 1 ? 'balanced' :
-      (stimuli.every(function (s) { return s.pipeline_caption_label === null; }) ?
-        'unlabeled_shuffle' : 'partial_balance');
-    return { clips: shuffle(chosen), mode: mode };
+    if (stimuli.some(function (s) { return s.pipeline_caption_label === null; })) {
+      return { clips: shuffle(stimuli).slice(0, count), mode: 'unlabeled_shuffle' };
+    }
+    if (count % 2 !== 0) {
+      throw new Error('sample_size must be even to balance captioned and uncaptioned videos.');
+    }
+    var half = count / 2;
+    var yes = stimuli.filter(function (s) { return s.pipeline_caption_label === true; });
+    var no = stimuli.filter(function (s) { return s.pipeline_caption_label === false; });
+    if (yes.length < half || no.length < half) {
+      throw new Error('Balanced sampling needs ' + half + ' captioned and ' + half +
+        ' uncaptioned stimuli; found ' + yes.length + ' and ' + no.length + '.');
+    }
+    var chosen = shuffle(yes).slice(0, half).concat(shuffle(no).slice(0, half));
+    return { clips: shuffle(chosen), mode: 'balanced' };
   }
 
   function rectangle(start, end) {

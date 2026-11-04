@@ -4,7 +4,7 @@ One jsPsych 7 experiment, `caption_check`, for [expfactory-deploy](https://githu
 
 **Interim synthetic preview only.** The two original four-second animations are reused for 20 preview entries. Every pipeline label is `null`; these are not pipeline predictions or real dataset observations. Replace the IRB consent placeholder and supply approved real stimuli before recruiting participants. The preview currently displays a preview-specific consent page; edit that page for the approved study.
 
-Participants learn that captions are burned-in speech subtitles, not writing physically in the scene, logos or decorative titles. After two practice clips with feedback, they complete one explicit instruction check and rate the sampled videos. During playback, Space or the notice button records the video's `currentTime` in seconds without interrupting viewing. After playback they answer Yes/No. Yes returns to the first marked frame for a rectangle; without a notice event, a slider lets them choose a frame while leaving notice time missing. Drawing uses mouse, trackpad or pointer input; recruit desktop/laptop users with a keyboard and mouse/trackpad. The instruction check asks participants to select Blue, records pass/fail and response time, and does not reject, terminate, or set `include_subject=reject`. Set any recruitment/quality policy separately under approved study procedures.
+Participants learn that captions are burned-in speech subtitles, not writing physically in the scene, logos or decorative titles. After two practice clips with feedback, they complete one explicit instruction check and rate the sampled videos. During playback, each Space press records the video's `currentTime` in seconds without interrupting viewing; the first press is the primary notice time. After playback they answer Yes/No. Yes returns to the first marked frame for a rectangle; without a notice event, a slider lets them choose a frame while leaving notice time missing. Drawing uses mouse, trackpad or pointer input; recruit desktop/laptop users with a keyboard and mouse/trackpad. The instruction check asks participants to select Blue, records pass/fail and response time, and does not reject, terminate, or set `include_subject=reject`. Set any recruitment/quality policy separately under approved study procedures.
 
 ## Structure and deploy contract
 
@@ -19,6 +19,8 @@ caption_check/
   style.css
   media/caption.mp4
   media/no-caption.mp4
+tests/
+  caption_check.test.js    # sampling and stimulus checks (run: node --test)
 ```
 
 The config `run` list loads the server's jsPsych 7 core, html-button-response, instructions, call-function and CSS assets, then the relative experiment files in order. Those plugin files are present under `expfactory_deploy_local/src/expfactory_deploy_local/static/jspsych7/` in expfactory-deploy. Scripts do not access the jsPsych instance during parsing. The deploy template constructs the instance, calls `caption_check_init()`, and runs `caption_check_experiment`.
@@ -40,9 +42,9 @@ Edit `caption_check/stimuli.js`. `captionCheckSettings.sample_size` defaults to 
 }
 ```
 
-Use actual observed clip ids; ids must be unique. Relative video paths resolve against the directory containing `stimuli.js`, not the battery page, and must stay within the experiment directory. Absolute URLs must use HTTPS. Do not insert credentials or signed/expiring URLs. Serve direct browser-playable video (H.264 MP4 is used here), not a YouTube watch/embed page. Hosting must allow playback and seeking, including byte-range requests. The loader needs no code change when approved external media URLs become available.
+The experiment checks only that each entry has a nonempty `clip_id` and `video_url` and a `pipeline_caption_label` of true, false or null; `source_id`, `license` and `attribution` are recorded as given. Use actual observed clip ids. Relative video paths resolve against the directory containing `stimuli.js`, not the battery page. Serve direct browser-playable video (H.264 MP4 is used here), not a YouTube watch/embed page. Hosting must allow playback and seeking, including byte-range requests. The loader needs no code change when approved external media URLs become available.
 
-Sampling draws without replacement, uses as many true/false pairs as possible up to half N, fills any remaining slots from unknown entries first, then the remaining known entries, and shuffles the final order. With sufficient known labels the result is balanced (one extra item may occur for odd N). With all labels missing it is an unlabeled shuffle. Insufficient balanced pools produce `partial_balance`; insufficient total clips produce fewer than N, recorded as `actual_sample_size`. The UI never shows pipeline labels. Do not infer caption absence from missing predictions.
+When every entry has a true/false label, sampling draws N/2 captioned and N/2 uncaptioned entries without replacement and shuffles their order (`sampling_mode: balanced`). N must then be even, and the experiment stops with an error if either pool has fewer than N/2 entries. When any label is null, the whole list is shuffled and the first N entries are used (`unlabeled_shuffle`); a list shorter than N yields fewer videos, recorded as `actual_sample_size`. The UI never shows pipeline labels. Do not infer caption absence from missing predictions.
 
 ## Data
 
@@ -50,14 +52,14 @@ All rows carry `PROLIFIC_PID`, `STUDY_ID`, and `SESSION_ID` from the URL query (
 
 Each `caption_rating` row contains:
 
-- `exp_stage` (`practice` or `test`), `clip_id`, `pipeline_caption_label`, `source_id`, `license`, `attribution`.
+- `exp_stage` (`practice` or `test`), `clip_id`, `pipeline_caption_label` (null on practice rows), `expected_presence` (the practice answer used for feedback; null on test rows), `source_id`, `license`, `attribution`.
 - `presence_answer`: true/false; null for media failure. No pipeline label is used to score test answers.
-- `notice_times`: all notice video timestamps in seconds; `notice_rts_ms`: elapsed wall time since initial playback. No press is an empty array, not a negative presence rating.
+- `notice_times`: video timestamps in seconds of every Space press, in order; the first entry is the primary notice time and sets the annotation frame. `notice_rts_ms`: elapsed wall time of each press since initial playback. No press is an empty array, not a negative presence rating.
 - `rectangle`: `{x,y,width,height}` as fractions of the displayed video frame, top-left origin, each in [0,1]; null for No or media failure. Rendering preserves the native aspect ratio, so coordinates map to the source frame without letterbox correction. `rectangle_video_time` records the actual paused video time. `annotation_frame_source` distinguishes `first_notice` and `manual_selection`.
 - `presence_rt_ms` since the presence question appeared, `rectangle_rt_ms` from opening annotation until saving, total `rt`, and `playback_start_rt_ms` (all milliseconds).
 - `video_duration` in seconds, intrinsic `video_width`/`video_height`, `played_through`, and `media_error` (null on successful playback). Playback failures offer Retry or Continue without rating and are never scored as caption absence.
 
-The separate `attention_check` row records `response`, `rt` and `attention_check_passed`. Practice expected answers exist only for synthetic feedback; their pipeline labels remain null. jsPsych also adds its normal trial metadata and the deploy server records interaction data.
+The separate `attention_check` row records `response`, `rt` and `attention_check_passed`. jsPsych also adds its normal trial metadata and the deploy server records interaction data.
 
 ## Real CC-BY stimuli: metadata selected for follow-up
 

@@ -5,20 +5,15 @@ function caption_check_init() {
   var params = new URLSearchParams(window.location.search);
   var n = captionCheckSettings.sample_size;
   if (!Number.isInteger(n) || n < 1) throw new Error('sample_size must be a positive integer.');
-  if (!captionCheckStimuli.length) throw new Error('Supply at least one stimulus.');
-  var ids = new Set();
   captionCheckStimuli.forEach(function (clip) {
-    ['clip_id', 'video_url', 'source_id', 'license', 'attribution'].forEach(function (key) {
+    ['clip_id', 'video_url'].forEach(function (key) {
       if (typeof clip[key] !== 'string' || !clip[key].trim()) {
         throw new Error('Each stimulus needs a nonempty ' + key + '.');
       }
     });
-    if (!clip.clip_id || ids.has(clip.clip_id)) throw new Error('Stimulus clip_id values must be unique.');
-    ids.add(clip.clip_id);
     if (![true, false, null].includes(clip.pipeline_caption_label)) {
       throw new Error('pipeline_caption_label must be true, false, or null.');
     }
-    captionCheck.videoURL(clip.video_url);
   });
   var sampled = captionCheck.sample(captionCheckStimuli, n, function (items) {
     return jsPsych.randomization.shuffle(items);
@@ -44,7 +39,7 @@ function caption_check_init() {
       '<section class="caption-check"><h2>What counts as a caption?</h2>' +
       '<p>Count subtitles or captions added to the video to represent speech or narration, including translations. They are part of the video image.</p>' +
       '<p>Do not count writing physically in the scene, such as a sign, label on an object, or writing on clothing. Logos, watermarks and decorative titles do not count as speech captions.</p>' +
-      '<p>Watch the entire video. Press <strong>Space</strong> or click <strong>Caption noticed</strong> as soon as you notice a caption. The video will keep playing. Additional presses are recorded too.</p></section>',
+      '<p>Watch the entire video. Press <strong>Space</strong> as soon as you notice a caption. The video will keep playing. Additional presses are recorded too.</p></section>',
       '<section class="caption-check"><h2>After each video</h2>' +
       '<p>Answer whether it had any captions. If you answer Yes, you will see the frame at your first notice. Drag a rectangle tightly around the caption and save it. You can redraw before saving.</p>' +
       '<p>If you saw a caption but forgot to mark it, answer Yes and choose a frame with the slider. Your first notice time will stay missing.</p>' +
@@ -63,9 +58,10 @@ function caption_check_init() {
         trial_id: 'caption_rating', exp_stage: stage,
         clip_id: clip.clip_id,
         pipeline_caption_label: stage === 'practice' ? null : clip.pipeline_caption_label,
-        source_id: clip.source_id || 'dbsurveys-original-synthetic',
-        license: clip.license || 'CC0-1.0',
-        attribution: clip.attribution || 'Original dbsurveys synthetic practice video.'
+        expected_presence: stage === 'practice' ? clip.expected_presence : null,
+        source_id: clip.source_id,
+        license: clip.license,
+        attribution: clip.attribution
       }
     };
   }

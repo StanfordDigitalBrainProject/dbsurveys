@@ -12,11 +12,11 @@ var jsPsychCaptionVideo = (function (jspsych) {
       var requestedFrame = null;
       var jsPsych = this.jsPsych;
       display.innerHTML = '<section class="caption-check">' +
-        '<h2></h2><p class="prompt">Watch the entire video. Press Space or click “Caption noticed” the moment you notice a caption.</p>' +
+        '<h2></h2><p class="prompt">Watch the entire video. Press Space the moment you notice a caption.</p>' +
         '<div class="frame"><video playsinline preload="auto" disablepictureinpicture></video>' +
         '<div class="drawing" hidden aria-label="Drag a rectangle around the caption"><div class="box" hidden></div></div></div>' +
         '<p class="status" role="status" aria-live="polite">Click Play when you are ready.</p>' +
-        '<button class="play">Play video</button><button class="notice" hidden>Caption noticed (Space)</button>' +
+        '<button class="play">Play video</button>' +
         '<div class="presence" hidden><p>Did this video have any burned-in captions or subtitles?</p>' +
         '<button class="yes">Yes</button><button class="no">No</button></div>' +
         '<div class="annotation" hidden><p class="draw-prompt"></p>' +
@@ -72,7 +72,6 @@ var jsPsychCaptionVideo = (function (jspsych) {
         phase = 'error';
         q('.error').hidden = false;
         q('.play').hidden = true;
-        q('.notice').hidden = true;
         q('.presence').hidden = true;
         q('.annotation').hidden = true;
         drawing.hidden = true;
@@ -81,7 +80,7 @@ var jsPsychCaptionVideo = (function (jspsych) {
       async function play() {
         phase = 'watch';
         q('.play').hidden = true;
-        q('.notice').hidden = false;
+        status('Press Space the moment you notice a caption.');
         try { await video.play(); } catch (_) { playbackError(); }
       }
       q('.play').onclick = play;
@@ -103,13 +102,11 @@ var jsPsychCaptionVideo = (function (jspsych) {
         presence = null; rect = null; annotationTime = null;
         finish();
       };
-      q('.notice').onclick = notice;
       video.addEventListener('ended', function () {
         if (phase !== 'watch') return;
         playedThrough = true;
         phase = 'presence';
         presenceStarted = performance.now();
-        q('.notice').hidden = true;
         q('.presence').hidden = false;
         status('Now answer whether the video had captions.');
         q('.yes').focus();
