@@ -37,12 +37,15 @@ Edit `caption_check/stimuli.js`. `captionCheckSettings.sample_size` defaults to 
   video_url: 'media/clip.mp4', // or an unsigned public https:// URL
   pipeline_caption_label: null, // true, false, or null (unknown)
   source_id: 'source-video-id',
+  source_title: 'Source video title',
+  channel: 'Creator channel',
+  source_url: 'https://www.youtube.com/watch?v=source-video-id',
   license: 'CC-BY-3.0', // exact license/version must be verified for actual media
   attribution: 'Title — creator; source link; license link; edits made'
 }
 ```
 
-The experiment checks only that each entry has a nonempty `clip_id` and `video_url` and a `pipeline_caption_label` of true, false or null; `source_id`, `license` and `attribution` are recorded as given. Use actual observed clip ids. Relative video paths resolve against the directory containing `stimuli.js`, not the battery page. Serve direct browser-playable video (H.264 MP4 is used here), not a YouTube watch/embed page. Hosting must allow playback and seeking, including byte-range requests. The loader needs no code change when approved external media URLs become available.
+The experiment checks only that each entry has a nonempty `clip_id` and `video_url` and a `pipeline_caption_label` of true, false or null; `source_id`, `license` and `attribution` are recorded as given, and `attribution` is listed on the closing credits screen. `source_title`, `channel` and `source_url` are not recorded; the tests check them against [CREDITS.md](caption_check/CREDITS.md). Use actual observed clip ids. Relative video paths resolve against the directory containing `stimuli.js`, not the battery page. Serve direct browser-playable video (H.264 MP4 is used here), not a YouTube watch/embed page. Hosting must allow playback and seeking, including byte-range requests. The loader needs no code change when approved external media URLs become available.
 
 When every entry has a true/false label, sampling draws N/2 captioned and N/2 uncaptioned entries without replacement and shuffles their order (`sampling_mode: balanced`). N must then be even, and the experiment stops with an error if either pool has fewer than N/2 entries. When any label is null, the whole list is shuffled and the first N entries are used (`unlabeled_shuffle`); a list shorter than N yields fewer videos, recorded as `actual_sample_size`. The UI never shows pipeline labels. Do not infer caption absence from missing predictions.
 
