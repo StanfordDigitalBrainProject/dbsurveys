@@ -20,7 +20,7 @@ caption_check/
   media/caption.mp4
   media/no-caption.mp4
 tests/
-  caption_check.test.js    # sampling and stimulus checks (run: node --test)
+  caption_check.test.js    # sampling, stimulus and notice-key checks (run: node --test)
 ```
 
 The config `run` list loads the server's jsPsych 7 core, html-button-response, instructions, call-function and CSS assets, then the relative experiment files in order. Those plugin files are present under `expfactory_deploy_local/src/expfactory_deploy_local/static/jspsych7/` in expfactory-deploy. Scripts do not access the jsPsych instance during parsing. The deploy template constructs the instance, calls `caption_check_init()`, and runs `caption_check_experiment`.
