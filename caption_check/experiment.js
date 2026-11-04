@@ -12,7 +12,7 @@ function captionCheckTimeline(pool, bundle, params) {
     STUDY_ID:params.get('STUDY_ID'), SESSION_ID:params.get('SESSION_ID'),
     pool_id:pool.pool_id, list_id:list.list_id, list_seed:bundle.seed,
     assignment_mode:pid?'participant_hash':'preview_random', main_count:bundle.main_count,
-    check_count:2, actual_sample_size:selected.length});
+    actual_sample_size:selected.length});
   timeline.push({type:jsPsychInstructions, show_clickable_nav:true, data:{trial_id:'instructions'}, pages:[
     '<section class="caption-check"><h1>Caption Check</h1><p><strong>Research preview — consent text pending.</strong></p>'+
     '<p>[IRB CONSENT PLACEHOLDER: insert approved consent information, contact details, risks, compensation, voluntary participation and withdrawal instructions before recruitment.]</p>'+
@@ -30,17 +30,17 @@ function captionCheckTimeline(pool, bundle, params) {
     video_url:captionPool.mediaURL(clip.video_url,base),
     data:{trial_id:'caption_rating',exp_stage:stage,clip_id:clip.clip_id,source_id:clip.source_id,
       channel_id:clip.channel_id,manifest_duration:clip.duration,predicted_labels:clip.predicted_labels || null,
-      is_check:stage==='test' && clip.role==='check',expected_presence:clip.role==='check'?clip.expected_presence:null,
+      expected_presence:stage==='practice'?clip.expected_presence:null,
       license:clip.license || null,attribution:clip.attribution || null},
     on_finish:function(data){
-      if(clip.role==='check') data.check_passed=data.media_error ? null : captionPool.categories.every(function(c){return data.presence[c]===clip.expected_presence[c];});
+      if(stage==='practice') data.practice_correct=data.media_error ? null : captionPool.categories.every(function(c){return data.presence[c]===clip.expected_presence[c];});
     }
   };}
   practice.forEach(function(clip,index){
     timeline.push(trial(clip,'practice',index));
     timeline.push({type:jsPsychHtmlButtonResponse, choices:['Continue'],data:{trial_id:'practice_feedback'},stimulus:function(){
       var last=jsPsych.data.get().last(1).values()[0];
-      return '<section class="caption-check"><h2>Practice feedback</h2><p>'+ (last.media_error?'Playback failed; this practice was not scored.':last.check_passed?'Your presence answers were correct.':'Review the categories before continuing.') +
+      return '<section class="caption-check"><h2>Practice feedback</h2><p>'+ (last.media_error?'Playback failed; this practice was not scored.':last.practice_correct?'Your presence answers were correct.':'Review the categories before continuing.') +
         '</p><p>'+ (clip.expected_presence.captions?'This example has a subtitle near the bottom.':'This example has no speech captions.')+
         ' The technical timecode is other floating text. There is no logo or watermark.</p></section>';
     }});
