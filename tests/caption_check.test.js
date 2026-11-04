@@ -187,3 +187,35 @@ test('stimulus checks require clip id, url and label but not license metadata', 
     assert.throws(() => context.caption_check_init(), /clip_id|video_url|pipeline_caption_label/);
   }
 });
+
+
+test('real stimulus set has 20 distinct local CC-BY clips from all 17 audited sources', () => {
+  const context = load();
+  const stimuli = Array.from(context.captionCheckStimuli);
+  assert.equal(stimuli.length, 20);
+  assert.equal(new Set(stimuli.map((c) => c.clip_id)).size, 20);
+  assert.equal(new Set(stimuli.map((c) => c.source_id)).size, 17);
+  const credits = fs.readFileSync(path.join(dir, 'CREDITS.md'), 'utf8');
+  let bytes = 0;
+  for (const clip of stimuli) {
+    assert.equal(clip.license, 'CC BY');
+    assert.equal(clip.pipeline_caption_label, null);
+    assert.match(clip.clip_id, /^[A-Za-z0-9_-]{11}_part_[0-9]{8}$/);
+    assert.equal(clip.video_url, 'media/' + clip.clip_id + '.mp4');
+    assert.equal(clip.source_url, 'https://www.youtube.com/watch?v=' + clip.source_id);
+    assert.ok(clip.source_title && clip.channel);
+    const size = fs.statSync(path.join(dir, clip.video_url)).size;
+    assert.ok(size < 10_000_000);
+    bytes += size;
+    for (const text of [clip.clip_id, clip.source_title, clip.channel, clip.source_url]) {
+      assert.ok(credits.includes(text));
+    }
+  }
+  assert.ok(bytes < 150_000_000);
+  context.caption_check_init();
+  const timeline = Array.from(context.caption_check_experiment);
+  const creditIndex = timeline.findIndex((t) => t.data && t.data.trial_id === 'credits');
+  assert.ok(creditIndex > timeline.findLastIndex((t) => t.data && t.data.exp_stage === 'test'));
+  assert.ok(creditIndex < timeline.findIndex((t) => t.data && t.data.trial_id === 'end'));
+  for (const clip of stimuli) assert.ok(timeline[creditIndex].stimulus.includes(clip.clip_id));
+});

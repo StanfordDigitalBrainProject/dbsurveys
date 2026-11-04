@@ -35,7 +35,7 @@ function caption_check_init() {
       '<section class="caption-check"><h1>Caption Check</h1>' +
       '<p><strong>Research preview — consent text pending.</strong></p>' +
       '<p>[IRB CONSENT PLACEHOLDER: insert the approved consent information, investigator contact details, risks, compensation, voluntary participation and withdrawal instructions before recruiting participants.]</p>' +
-      '<p>This preview uses short original synthetic videos. Continuing starts the preview.</p></section>',
+      '<p>This preview uses real video excerpts and two synthetic practice videos. Continuing starts the preview.</p></section>',
       '<section class="caption-check"><h2>What counts as a caption?</h2>' +
       '<p>Count subtitles or captions added to the video to represent speech or narration, including translations. They are part of the video image.</p>' +
       '<p>Do not count writing physically in the scene, such as a sign, label on an object, or writing on clothing. Logos, watermarks and decorative titles do not count as speech captions.</p>' +
@@ -98,6 +98,23 @@ function caption_check_init() {
       type: jsPsychCallFunction,
       func: function () { if (typeof window.dataSync === 'function') window.dataSync(); }
     });
+  });
+  function creditHTML(clip) {
+    function escape(text) {
+      return String(text).replace(/[&<>"']/g, function (character) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character];
+      });
+    }
+    return '<li><strong>' + escape(clip.clip_id) + '</strong>: ' + escape(clip.attribution) + '</li>';
+  }
+  caption_check_experiment.push({
+    type: jsPsychHtmlButtonResponse,
+    stimulus: '<section class="caption-check"><h2>Video credits</h2>' +
+      '<p>The real videos are excerpts, used under CC BY as labeled on YouTube. ' +
+      'Playback encoding and metadata may be adapted. Practice animations are CC0.</p>' +
+      '<div class="video-credits"><ul>' + sampled.clips.concat(captionCheckPractice).map(creditHTML).join('') +
+      '</ul></div></section>',
+    choices: ['Continue'], data: { trial_id: 'credits' }
   });
   caption_check_experiment.push({
     type: jsPsychHtmlButtonResponse,
