@@ -1,6 +1,6 @@
 [
   {
-    "name": "Caption Check",
+    "name": "Video Rating Pilot",
     "template": "jspsych",
     "run": [
       "static/jspsych7/jspsych.js",
@@ -12,16 +12,16 @@
       "stimuli.js",
       "pool.js",
       "helpers.js",
-      "plugin-caption-video.js",
+      "plugin-video-rating.js",
       "experiment.js"
     ],
-    "exp_id": "caption_check",
+    "exp_id": "video_rating_pilot",
     "contributors": [
       "Stanford Digital Brain Project"
     ],
     "time": 10,
     "reference": "https://github.com/StanfordDigitalBrainProject/dbsurveys",
-    "notes": "Manifest-driven caption, floating text and logo annotation preview. CC BY excerpts and synthetic practices; replace consent and pool before recruitment.",
+    "notes": "Manifest-driven video-rating preview: personal feelings, general-audience review flags, and caption/text/logo annotation. CC BY excerpts and synthetic practices; replace consent and pool before recruitment.",
     "publish": "True"
   }
 ]

@@ -1,6 +1,10 @@
 # dbsurveys
 
-`caption_check` is a jsPsych 7 survey for expfactory-deploy. Participants watch a clip, report the presence of three kinds of on-screen additions, then locate and rate each category they saw:
+`video_rating_pilot` is a jsPsych 7 survey for expfactory-deploy. Each trial runs in this order after the entire clip plays:
+
+1. **Your own feelings:** pleasantness from 1 (very unpleasant) to 9 (very pleasant), and arousal from 1 (very calm) to 9 (very excited). The questions ask how watching made the viewer feel, rather than which emotions appear in the clip. Both answers are required and have no defaults.
+2. **General-audience suitability:** select all applicable flags for sexual or pornographic content, violence, gore or injury, eating-disorder-related content, and other upsetting or triggering content. Selecting Other reveals an optional description of up to 240 characters. “None of these” is exclusive: it clears the other flags and any hidden description; choosing any flag clears None. These are researcher-review flags, with no overall score or automatic clip exclusion.
+3. **On-screen additions:** report presence, draw boxes and rate distraction separately for each category:
 
 - **Captions or subtitles:** text representing speech, narration or translation.
 - **Other floating text:** added titles, labels and other words.
@@ -13,32 +17,36 @@ Writing and branding physically in the filmed scene are excluded. Presence is se
 ## Files and deployment
 
 ```
-caption_check/
+video_rating_pilot/
   config.json              # expfactory run assets, estimated time: 10 minutes
   stimuli.js               # manifest/list paths and script-relative asset base
   pool.json                # preview media manifest, predictions and provenance
   lists.json               # eight fixed participant lists
   pool.js                  # shared manifest/list validation and PID assignment
   helpers.js               # box geometry, escaping and desktop eligibility
-  plugin-caption-video.js  # playback, three-category presence and annotation
+  plugin-video-rating.js   # playback, feelings, review flags and overlay annotation
   experiment.js            # loading, instructions, practices and submission
   style.css
   CREDITS.md               # existing CC BY attribution audit
   media/*.mp4              # existing CC BY excerpts and CC0 animations
 scripts/build-lists.js      # seeded list generation; no dependencies
-tests/caption_check.test.js # Node behavioral tests
+tests/video_rating_pilot.test.js # Node behavioral tests
 tests/browser-flow.js      # browser interaction/data assertions
 ```
 
-The deploy template loads the jsPsych assets in `config.json`, constructs its instance, calls `caption_check_init()` and runs `caption_check_experiment`. The first trial loads and validates both JSON files, then appends the selected timeline using jsPsych's timeline API. Loading failures offer Retry. Files resolve relative to `stimuli.js`, including on battery pages. Keep the JSON files alongside the experiment assets and ensure the deployment serves them.
+The deploy template loads the jsPsych assets in `config.json`, constructs its instance, calls `video_rating_pilot_init()` and runs `video_rating_pilot_experiment`. The first trial loads and validates both JSON files, then appends the selected timeline using jsPsych's timeline API. Loading failures offer Retry. Files resolve relative to `stimuli.js`, including on battery pages. Keep the JSON files alongside the experiment assets and ensure the deployment serves them.
 
-Desktop/laptop use is required: the first trial blocks windows narrower than 800 CSS pixels and devices without a fine pointer. Widening the window or switching to an appropriate device allows Retry. Recruit desktop users with a mouse or trackpad; drawing uses pointer events. Videos retain their aspect ratio, including portrait clips, and are capped at 45% of the viewport height.
+Desktop/laptop use is required: the first trial blocks windows smaller than **1280 × 720 CSS pixels** and devices without a fine pointer. Widening the window or switching to an appropriate device allows Retry. Recruit desktop users with a mouse or trackpad; drawing uses pointer events.
+
+Every clip uses the same **480 × 270 pixel (16:9) frame**, at both 1280 × 720 and 1920 × 1080. Other aspect ratios are letterboxed with `object-fit: contain`; the drawing surface covers only the actual video picture. Normalized coordinates exclude the bars. The video sits beside the current question screen. Feelings, suitability, overlay presence and each present category's annotation use successive screens so the video and active questions fit without scrolling. Credits are paginated in groups of three. No response screen requires an internal scroll area.
+
+**Deployment migration:** the experiment was renamed from `caption_check` to `video_rating_pilot` (display name **Video Rating Pilot**). A deployment registered under the old ID must be re-added under the new ID; update any battery experiment selection as well. The folder, config `exp_id`, and deploy globals must agree. This repository does not perform that migration or deploy the change.
 
 After each test trial, `window.dataSync()` is called when provided. The normal deploy completion flow submits the final dataset and handles study completion. This experiment does not initialize another jsPsych instance, redirect participants or call Prolific APIs. Test actual upload/completion with the configured battery before recruitment. This change does not deploy the survey.
 
 ## Replacing the pool
 
-Change `caption_check/pool.json`, rebuild `lists.json`, and publish those two files together. Alternatively change their paths in `stimuli.js`. A manifest is JSON with this contract:
+Change `video_rating_pilot/pool.json`, rebuild `lists.json`, and publish those two files together. Alternatively change their paths in `stimuli.js`. A manifest is JSON with this contract:
 
 ```json
 {
@@ -70,47 +78,49 @@ The abbreviated example omits the two required practice records. Retain the prev
 
 `base_url` resolves relative to the manifest URL; each clip's `video_url` resolves against that base. Relative paths and public HTTP(S) absolute URLs are accepted. Credentials, query strings (including signed URLs), fragments and non-HTTP schemes are rejected for both the base and media URLs. Serve direct browser-playable H.264/AAC MP4 files with byte-range support for frame seeking. Cross-origin manifests require CORS; external media must permit browser playback. A media failure offers Retry or Continue without rating and remains unknown in the data.
 
-**Do not commit dataset media unless it is CC BY licensed.** Any dataset license may be used for separately hosted research clips, but hosting is a separate decision. This change adds no downloaded media or credentialed URLs. The existing real clips retain source audio and attribution in [CREDITS.md](caption_check/CREDITS.md). The audit recorded CC BY on 2026-10-28 without a version; confirm licensing before recruitment. Credits are shown before final submission and escaped as text.
+**Do not commit dataset media unless it is CC BY licensed.** Any dataset license may be used for separately hosted research clips, with hosting planned as a storage bucket using unlisted, public playback links. The labeled dataset pool is not ready and is not included here. This change adds no downloaded media or credentialed URLs. The existing real clips retain source audio and attribution in [CREDITS.md](video_rating_pilot/CREDITS.md). The audit recorded CC BY on 2026-10-28 without a version; confirm licensing before recruitment. Credits are shown before final submission and escaped as text.
 
 ## Building and assigning lists
 
 From the repository root, with Node installed:
 
 ```sh
-node scripts/build-lists.js caption_check/pool.json caption_check/lists.json \
-  --seed preview-v2
+node scripts/build-lists.js video_rating_pilot/pool.json video_rating_pilot/lists.json \
+  --seed pilot-v1
 node --test
 ```
 
-`--main-count` defaults to **16 main clips** per list, the starting count for a 10-minute session; pass a different value once a pilot sets the final count. `--seed` defaults to `caption-v2`, and `--list-count` defaults to eight. Given the same input order, seed and options, output is identical. The builder fails if there are too few distinct sources, rather than silently shrinking the study. Runtime validation also rejects missing clips, duplicate sources, stale pool IDs, incorrect lengths and practice clips in lists. Change `pool_id` when replacing the media/prediction pool and rebuild the lists.
+`--main-count` defaults to **12 main clips** per list, the starting count for a 10-minute session; pass a different value once a pilot sets the final count. `--seed` defaults to `pilot-v1`, and `--list-count` defaults to eight. Given the same input order, seed and options, output is identical. The builder fails if there are too few distinct sources, rather than silently shrinking the study. Runtime validation also rejects missing clips, duplicate sources, stale pool IDs, incorrect lengths and practice clips in lists. Change `pool_id` when replacing the media/prediction pool and rebuild the lists.
 
 Within each list, each original source appears once. The builder stratifies on the caption prediction first: `captioned` (`captions: true`), `not_captioned` (`captions: false`) and `unknown` (null or omitted). It fills each list evenly from the strata the pool contains, so a clip predicted `captions: false` counts as not captioned even when its other labels are missing. Within each caption stratum, it spreads the `other_text` and `logos` predictions (true, false or unknown), then spreads channels and prefers sources/clips used less often by earlier lists. The bundle's `strata` field lists the caption strata found. Constraints are best efforts when the pool is skewed: inspect generated lists for the actual mix before recruiting. Only the two practice trials receive feedback; practice outcomes are recorded without rejecting or terminating participants.
 
-`PROLIFIC_PID` determines the list by a stable FNV-1a hash modulo the number of lists. Deploy's legacy `PROLIFIC_ID` is used when `PROLIFIC_PID` is absent. Without either, previews choose a random list once at loading. The ID, selected list and assignment mode are recorded. Keep the list bundle unchanged during a study so returning participants retain their assignment. The limited preview has only 17 original sources, so overlap between its 16-clip lists is unavoidable. A larger pool enables more variation between participants.
+`PROLIFIC_PID` determines the list by a stable FNV-1a hash modulo the number of lists. Deploy's legacy `PROLIFIC_ID` is used when `PROLIFIC_PID` is absent. Without either, previews choose a random list once at loading. The ID, selected list and assignment mode are recorded. Keep the list bundle unchanged during a study so returning participants retain their assignment. The limited preview has only 17 original sources, so overlap between its 12-clip lists is unavoidable. A larger pool enables more variation between participants.
 
 ## Timing and verification
 
-Each trial records total browser time, playback start latency, presence-response time and annotation time. Timing depends on the clip and how many categories need boxes. Automated interactions cannot measure human comprehension or drawing speed. **A short human pilot on the actual classifier pool sets the final main-clip count for a 10-minute session.** Use the recorded timing fields to choose `--main-count`, rebuild the lists, and keep `time` in `config.json` and the instructions' “about 10 minutes” consistent with the result. The builder and the committed preview default to 16 main clips, matching the 10 minutes in `config.json`.
+Each trial records total browser time, playback start latency and separate response times for feelings, suitability, overlay presence and annotation. **A short human pilot on the actual classifier pool sets the final count for a 10-minute session.** The builder and committed preview start at **12 main clips**, plus two practice clips with feedback. `config.json` advertises 10 minutes. Use the timing fields to revise `--main-count`, rebuild lists, and update the advertised duration if a pilot shows a different session length.
 
-Browser pacing measurements on a 15.97-second real clip took **19.15 s, 23.11 s and 31.18 s** for zero, one and three positive categories, respectively (normal-speed playback, a scripted three-second presence response and four seconds per annotation). These measure browser flow with explicit response pacing, not participant speed. Subtracting playback gives about 8.5 seconds mean response overhead across those three cases. At that pace, 16 main trials of 12-second dataset clips take about 330 seconds, leaving roughly 270 seconds of a 10-minute budget for consent, instructions, two practices with feedback, credits and slower human responses. Clips averaging 15 seconds or participants drawing many boxes will require a smaller count.
+Normal-speed browser measurements on a 15.97-second real clip took **32.14 s, 40.12 s and 56.15 s** for zero, one and three annotated categories. Pacing allowed six seconds for feelings, six for suitability, four for presence and eight per annotation. These are measured browser-flow times under explicit scripted pacing, not human timing or evidence of participant comprehension. The mean is **42.81 seconds per trial** on that clip, or about **39.7 seconds** after replacing playback with the preview pool's 12.89-second mean. Twelve main trials therefore budget about 477 seconds, leaving about two minutes for instructions, two short practices, feedback and credits. Clips with many additions or participants needing more time can exceed this budget; reduce the count after the human pilot if needed.
 
-Node tests exercise the list builder, URL/manifest validation, participant assignment and timeline/data behavior. `tests/browser-flow.js` defines `runCaptionBrowserTests()` for a Chrome page loading the experiment scripts. It uses real media playback and seeking, DOM forms and pointer-event dispatch; it checks required answers, multiple boxes across frames, undo, separate presence/distraction, normalized coordinates, timing and media errors. Synthetic event tests replace pointer capture only during dispatch; native dragging must also be smoke-tested with a mouse or browser driver.
+`node --test` exercises list building, manifest validation, participant assignment, deploy initialization and letterbox geometry. `tests/browser-flow.js` defines `runVideoRatingBrowserTests()` for Chrome on a page loading the experiment scripts. It uses real playback/seeking, forms and pointer-event dispatch to verify the response order, required 9-point answers, multi-select flags, exclusive None, conditional free text, saved per-trial answers, multiple boxes, undo, normalized coordinates, and media-error handling. Synthetic pointer dispatch temporarily replaces pointer capture; native dragging is checked separately.
 
-Local verification passed the Node tests and 16 browser assertions. A full jsPsych smoke run of an earlier build, which also mixed two practice clips into the main sequence, completed two practices and 16 main clips with one list assignment; playback was accelerated to 8× only for that full-run smoke test. Repeat the full run with the current lists before recruitment. The timing benchmark used normal playback. A separate native browser drag saved a box, and a 390-pixel window was blocked. Actual deployment upload/completion remains to be checked in study setup.
+Local verification passed ten Node tests and 28 browser assertions. Screenshot and overflow checks at 1280 × 720 and 1920 × 1080 covered the instruction pages, playback, feelings, suitability with its optional description open, overlay presence, annotation and credits. Both used the same 480 × 270 frame. A native portrait-video drag confirmed that the 151.875 × 270 drawing surface excludes the side bars. Complete jsPsych smoke runs at both sizes finished two practices and 12 main clips, recorded the new answers and experiment ID, and called `dataSync` 12 times. These smoke runs accelerated playback to 8×; the timing benchmark used normal speed. Proof and screenshots remain outside this repository. The actual deployment upload/completion still needs testing in the approved study setup.
 
 For local browser verification, serve a scratch bootstrap page with jsPsych 7 and the three plugins listed in `config.json`, load the experiment scripts in config order, then use the same initialization sequence as deploy. Use a range-capable local server for MP4 seeking. Keep the bootstrap, browser evidence and output data outside the repository. A basic static server that ignores Range headers can play videos but fail annotation seeks. Verify final data upload and completion on the actual deployment before recruiting.
 
 ## Recorded data
 
-All rows carry `pool_id`, `list_id`, `list_seed`, `assignment_mode`, `main_count`, `actual_sample_size` and the URL identifiers `PROLIFIC_PID`, `STUDY_ID`, `SESSION_ID` (null when absent). Each `caption_rating` trial includes:
+All rows carry `pool_id`, `list_id`, `list_seed`, `assignment_mode`, `main_count`, `actual_sample_size` and the URL identifiers `PROLIFIC_PID`, `STUDY_ID`, `SESSION_ID` (null when absent). Each `video_rating` trial includes:
 
 - `exp_stage` (`practice` or `test`), `clip_id`, `source_id`, `channel_id`, `manifest_duration`, `predicted_labels`, `license`, `attribution` and `expected_presence` (null for main clips).
+- `feelings`: `{pleasantness, arousal}`, each an integer from 1 to 9, or null when media failure prevents a usable trial.
+- `suitability_flags`: an array drawn from `sexual`, `violence`, `gore_injury`, `eating_disorder`, `other_upsetting`. `suitability_none` records an explicit None selection, and `suitability_other_text` is the optional description (null when absent). An empty flag array with `suitability_none: true` differs from media failure, which leaves the new answers null. No composite score is calculated.
 - `presence`: category keys `captions`, `other_text`, `logos`, each true/false; all null when media fails and the participant skips.
 - `distraction`: the same keys with ratings 1–5 for present categories and null for absent categories or missing media. Each is the category's overall rating, shared by its boxes.
-- `boxes`: an array of `{x, y, width, height, video_time, category, rating}`. Coordinates are fractions of the displayed video frame, top-left origin, within [0,1]; `video_time` is the actual paused timestamp in seconds. Multiple boxes per category and frame are allowed. An empty array is expected for all-negative answers or media failure.
-- `rt`, `playback_start_rt_ms`, `presence_rt_ms`, `annotation_rt_ms` in milliseconds; `video_duration` in seconds, intrinsic `video_width`, `video_height`, `played_through`, and `media_error` (null on success).
+- `boxes`: an array of `{x, y, width, height, video_time, category, rating}`. Coordinates are fractions of the video picture (excluding letterbox bars), top-left origin, within [0,1]; `video_time` is the actual paused timestamp in seconds. Multiple boxes per category and frame are allowed. An empty array is expected for all-negative answers or media failure.
+- `rt`, `playback_start_rt_ms`, `feelings_rt_ms`, `suitability_rt_ms`, `presence_rt_ms`, `annotation_rt_ms` in milliseconds; `video_duration` in seconds, intrinsic `video_width`, `video_height`, `played_through`, and `media_error` (null on success).
 
-Synthetic practices also record `practice_correct` (true/false, null on media failure). Main predictions never score participant answers. The previous Space-key notice task and single-rectangle fields have been replaced by category-specific annotation; analyses must use the v2 schema. Keep participant records out of this public repository.
+Synthetic practices also record `practice_correct` (true/false, null on media failure). Main predictions never score participant answers. The previous Space-key notice task and single-rectangle fields have been replaced by category-specific annotation; analyses must use the Video Rating Pilot schema. Keep participant records out of this public repository.
 
 ## Synthetic media provenance
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 const fs = require('node:fs');
-const poolAPI = require('../caption_check/pool.js');
+const poolAPI = require('../video_rating_pilot/pool.js');
 
-function buildLists(pool, { seed = 'caption-v2', mainCount = 16, listCount = 8 } = {}) {
+function buildLists(pool, { seed = 'pilot-v1', mainCount = 12, listCount = 8 } = {}) {
   poolAPI.validatePool(pool, 'https://manifest.example/pool.json');
   if (!Number.isInteger(mainCount) || mainCount < 1 || !Number.isInteger(listCount) || listCount < 1) {
     throw new Error('Counts must be positive integers.');
@@ -50,7 +50,7 @@ if (require.main === module) {
   try {
     const args = process.argv.slice(2);
     const [input, output] = args;
-    if (!input || !output || args.length % 2 !== 0) throw new Error('Usage: node scripts/build-lists.js pool.json lists.json [--seed text] [--main-count 16] [--list-count 8]');
+    if (!input || !output || args.length % 2 !== 0) throw new Error('Usage: node scripts/build-lists.js pool.json lists.json [--seed text] [--main-count 12] [--list-count 8]');
     const options = {};
     for (let i = 2; i < args.length; i += 2) {
       const key = {'--seed':'seed','--main-count':'mainCount','--list-count':'listCount'}[args[i]];

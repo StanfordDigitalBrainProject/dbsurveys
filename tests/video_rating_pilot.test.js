@@ -6,9 +6,9 @@ const path = require('node:path');
 const vm = require('node:vm');
 const {spawnSync} = require('node:child_process');
 const os = require('node:os');
-const api = require('../caption_check/pool.js');
+const api = require('../video_rating_pilot/pool.js');
 const {buildLists} = require('../scripts/build-lists.js');
-const dir = path.join(__dirname, '..', 'caption_check');
+const dir = path.join(__dirname, '..', 'video_rating_pilot');
 const preview = JSON.parse(fs.readFileSync(path.join(dir, 'pool.json')));
 const fixed = JSON.parse(fs.readFileSync(path.join(dir, 'lists.json')));
 const clone = value => structuredClone(value);
@@ -30,7 +30,7 @@ const captionState = c => (c.predicted_labels || {}).captions;
 
 test('seeded lists balance caption predictions, spread other labels, use distinct sources and spread channels', () => {
   const pool = largePool();
-  assert.equal(buildLists(pool).main_count,16);
+  assert.equal(buildLists(pool).main_count,12);
   const bundle = buildLists(pool,{seed:'proof',listCount:4,mainCount:24});
   assert.deepEqual(bundle.strata,['captioned','not_captioned']);
   assert.deepEqual(bundle,buildLists(pool,{seed:'proof',listCount:4,mainCount:24}));
@@ -61,27 +61,27 @@ test('caption-only predictions balance captioned, not captioned and unknown clip
   const pool = poolWith('caption-only-fixture',90,i => i<15 ? {captions:true} : i<30 ? {captions:false} :
     i%2 ? {captions:null} : undefined);
   const bundle = buildLists(pool);
-  assert.equal(bundle.main_count,16);
+  assert.equal(bundle.main_count,12);
   assert.deepEqual(bundle.strata,['captioned','not_captioned','unknown']);
   const byId = new Map(pool.clips.map(c => [c.clip_id,c]));
   for (const list of bundle.lists) {
     const mains = list.clip_ids.map(id => byId.get(id));
     for (const state of [true,false,undefined]) {
       const n = mains.filter(c => (captionState(c) ?? undefined) === state).length;
-      assert.ok(n === 5 || n === 6,`caption ${state}: ${n} of 16`);
+      assert.ok(n === 4,`caption ${state}: ${n} of 12`);
     }
   }
 });
 
 test('preview is reproducible, one source per list, and cannot silently shrink a full study', () => {
   assert.deepEqual(api.validatePool(preview,'https://example.org/pool.json'),preview);
-  assert.deepEqual(fixed,buildLists(preview,{seed:'preview-v2'}));
+  assert.deepEqual(fixed,buildLists(preview,{seed:'pilot-v1'}));
   assert.throws(()=>buildLists(preview,{mainCount:18}),/Not enough distinct sources/);
   for(const list of fixed.lists) {
     const mains = list.clip_ids.map(id=>preview.clips.find(c=>c.clip_id===id));
-    assert.equal(mains.length,16);
+    assert.equal(mains.length,12);
     assert.ok(mains.every(c=>!preview.practice_ids.includes(c.clip_id)));
-    assert.equal(new Set(mains.map(c=>c.source_id)).size,16);
+    assert.equal(new Set(mains.map(c=>c.source_id)).size,12);
     assert.ok(mains.every(c=>c.license==='CC BY' && c.predicted_labels.captions===null));
   }
   for(const clip of preview.clips) assert.ok(fs.statSync(path.join(dir,clip.video_url)).size>0);
@@ -122,16 +122,16 @@ function runtime(search='') {
   const added={};
   const context=vm.createContext({URL,URLSearchParams,Map,Set,fetch,
     document:{currentScript:{src:'https://example.org/assets/stimuli.js'}},
-    window:{location:{search},innerWidth:1200,matchMedia:()=>({matches:true})},
+    window:{location:{search},innerWidth:1280,innerHeight:720,matchMedia:()=>({matches:true})},
     jsPsych:{data:{addProperties:p=>Object.assign(added,p)}},
-    jsPsychInstructions:'instructions',jsPsychHtmlButtonResponse:'buttons',jsPsychCallFunction:'call',jsPsychCaptionVideo:'video'});
+    jsPsychInstructions:'instructions',jsPsychHtmlButtonResponse:'buttons',jsPsychCallFunction:'call',jsPsychVideoRating:'video'});
   for(const file of ['stimuli.js','pool.js','helpers.js','experiment.js']) vm.runInContext(fs.readFileSync(path.join(dir,file),'utf8'),context);
   return {context,added};
 }
 
 test('timeline records identifiers, assignments, labels and practice outcomes without scoring main clips', () => {
   const {context,added}=runtime('?PROLIFIC_PID=preferred&PROLIFIC_ID=legacy&STUDY_ID=s&SESSION_ID=x');
-  const timeline=context.captionCheckTimeline(preview,fixed,new URLSearchParams(context.window.location.search));
+  const timeline=context.videoRatingPilotTimeline(preview,fixed,new URLSearchParams(context.window.location.search));
   assert.equal(added.PROLIFIC_PID,'preferred');assert.equal(added.STUDY_ID,'s');assert.equal(added.SESSION_ID,'x');
   assert.equal(added.list_id,api.chooseList(fixed,'preferred').list_id);
   const videos=Array.from(timeline).filter(t=>t.type==='video');
@@ -147,16 +147,16 @@ test('timeline records identifiers, assignments, labels and practice outcomes wi
   const main=mains[0], result={presence:{}};main.on_finish(result);
   assert.equal(result.practice_correct,undefined);assert.equal(main.data.expected_presence,null);
   assert.equal(main.video_url,'https://example.org/assets/'+preview.clips.find(c=>c.clip_id===main.data.clip_id).video_url);
-  context.caption_check_init();assert.equal(context.caption_check_experiment.length,1);
+  context.video_rating_pilot_init();assert.equal(context.video_rating_pilot_experiment.length,1);
 });
 
 test('legacy deploy identifier remains supported and small/coarse devices are blocked', () => {
   const {context,added}=runtime('?PROLIFIC_ID=legacy');
-  context.captionCheckTimeline(preview,fixed,new URLSearchParams('?PROLIFIC_ID=legacy'));
-  assert.equal(added.PROLIFIC_PID,'legacy');assert.equal(context.captionCheck.desktop(),true);
-  context.window.innerWidth=390;assert.equal(context.captionCheck.desktop(),false);
-  context.window.innerWidth=1200;context.window.matchMedia=()=>({matches:false});assert.equal(context.captionCheck.desktop(),false);
-  assert.deepEqual(JSON.parse(JSON.stringify(context.captionCheck.rectangle({x:.8,y:.9},{x:.2,y:.3}))),
+  context.videoRatingPilotTimeline(preview,fixed,new URLSearchParams('?PROLIFIC_ID=legacy'));
+  assert.equal(added.PROLIFIC_PID,'legacy');assert.equal(context.videoRatingPilot.desktop(),true);
+  context.window.innerWidth=390;assert.equal(context.videoRatingPilot.desktop(),false);
+  context.window.innerWidth=1280;context.window.matchMedia=()=>({matches:false});assert.equal(context.videoRatingPilot.desktop(),false);
+  assert.deepEqual(JSON.parse(JSON.stringify(context.videoRatingPilot.rectangle({x:.8,y:.9},{x:.2,y:.3}))),
     {x:.2,y:.3,width:.6000000000000001,height:.6000000000000001});
 });
 
@@ -166,11 +166,22 @@ test('CLI writes a consumer-valid bundle and fails explicitly for insufficient s
     const out=path.join(tmp,'lists.json');const script=path.join(dir,'../scripts/build-lists.js');
     const run=spawnSync(process.execPath,[script,path.join(dir,'pool.json'),out,'--seed','cli']);
     assert.equal(run.status,0,run.stderr.toString());
-    assert.equal(api.validateLists(preview,JSON.parse(fs.readFileSync(out))).main_count,16);
-    const smaller=spawnSync(process.execPath,[script,path.join(dir,'pool.json'),out,'--main-count','12']);
-    assert.equal(smaller.status,0,smaller.stderr.toString());
     assert.equal(api.validateLists(preview,JSON.parse(fs.readFileSync(out))).main_count,12);
+    const smaller=spawnSync(process.execPath,[script,path.join(dir,'pool.json'),out,'--main-count','10']);
+    assert.equal(smaller.status,0,smaller.stderr.toString());
+    assert.equal(api.validateLists(preview,JSON.parse(fs.readFileSync(out))).main_count,10);
     const fail=spawnSync(process.execPath,[script,path.join(dir,'pool.json'),out,'--main-count','18']);
     assert.equal(fail.status,1);assert.match(fail.stderr.toString(),/distinct sources/);
   } finally {fs.rmSync(tmp,{recursive:true,force:true});}
+});
+
+
+test('letterbox geometry normalizes to the video picture, excluding bars', () => {
+  const {context}=runtime();
+  const rect=(w,h)=>JSON.parse(JSON.stringify(context.videoRatingPilot.pictureRect(w,h,480,270)));
+  assert.deepEqual(rect(1920,1080),{x:0,y:0,width:480,height:270});
+  assert.deepEqual(rect(1080,1920),{x:164.0625,y:0,width:151.875,height:270});
+  assert.deepEqual(rect(1000,1000),{x:105,y:0,width:270,height:270});
+  assert.deepEqual(rect(2400,1000),{x:0,y:35,width:480,height:200});
+  context.window.innerHeight=719;assert.equal(context.videoRatingPilot.desktop(),false);
 });
