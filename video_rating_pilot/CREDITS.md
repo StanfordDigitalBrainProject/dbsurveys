@@ -1,4 +1,4 @@
-# Video credits
+# Video Rating Pilot credits
 
 The main-trial videos are excerpts of the source videos listed below. Each source was labeled Creative Commons (CC BY) on YouTube in the 2026-10-28 license audit. Source titles and channel names are reproduced for attribution. The audit did not record the license version; it should be confirmed before recruiting participants. See [YouTube Creative Commons licensing](https://support.google.com/youtube/answer/2797468) and [CC BY](https://creativecommons.org/licenses/by/).
 

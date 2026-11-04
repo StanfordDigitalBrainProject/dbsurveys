@@ -1,90 +1,127 @@
 # dbsurveys
 
-One jsPsych 7 experiment, `caption_check`, for [expfactory-deploy](https://github.com/expfactory/expfactory-deploy), following [expfactory_task_demo](https://github.com/lobennett/expfactory_task_demo).
+`video_rating_pilot` is a jsPsych 7 survey for expfactory-deploy. Each trial runs in this order after the entire clip plays:
 
-**Research preview.** Main trials use 20 real CC-BY video excerpts across 17 sources, with two original four-second synthetic practice animations. Every pipeline caption label is `null` because no existing prediction was found for the selected clips. Replace the IRB consent placeholder before recruiting participants. The preview currently displays a preview-specific consent page; edit that page for the approved study.
+1. **Your own feelings:** pleasantness from 1 (very unpleasant) to 9 (very pleasant), and arousal from 1 (very calm) to 9 (very excited). The questions ask how watching made the viewer feel, rather than which emotions appear in the clip. Both answers are required and have no defaults.
+2. **General-audience suitability:** select all applicable flags for sexual or pornographic content, violence, gore or injury, eating-disorder-related content, and other upsetting or triggering content. “None of these” is exclusive: it clears the other flags; choosing any flag clears None. These are researcher-review flags, with no overall score or automatic clip exclusion.
+3. **On-screen additions:** report presence, draw boxes and rate distraction separately for each category:
 
-Participants learn that captions are burned-in speech subtitles, not writing physically in the scene, logos or decorative titles. After two practice clips with feedback, they complete one explicit instruction check and rate the sampled videos. During playback, each Space press records the video's `currentTime` in seconds without interrupting viewing; the first press is the primary notice time. After playback they answer Yes/No. Yes returns to the first marked frame for a rectangle; without a notice event, a slider lets them choose a frame while leaving notice time missing. Drawing uses mouse, trackpad or pointer input; recruit desktop/laptop users with a keyboard and mouse/trackpad. The instruction check asks participants to select Blue, records pass/fail and response time, and does not reject, terminate, or set `include_subject=reject`. Set any recruitment/quality policy separately under approved study procedures.
+- **Captions or subtitles:** text representing speech, narration or translation.
+- **Other floating text:** added titles, labels and other words.
+- **Logos or watermarks:** added branding or channel marks.
 
-## Structure and deploy contract
+Writing and branding physically in the filmed scene are excluded. Presence is separate from distraction: a participant may answer Yes and rate an addition **1 — Not at all** distracting. Each present category requires at least one box and one overall rating, from 1 to **5 — Extremely**. Participants can draw multiple boxes on different frames. Undo removes the last box; Clear removes the current category's boxes. Previously saved categories remain in the trial data.
+
+**Research preview:** replace the IRB consent placeholder before recruitment. The committed pool contains only the existing 20 CC BY excerpts from 17 source videos and two original CC0 practice animations. Classifier labels for the real excerpts remain unknown. This preview cannot establish caption balance; no human inspection has been substituted for classifier predictions. Dataset hosting, classifier execution, Prolific setup and compensation changes are outside this repository's implementation.
+
+## Files and deployment
 
 ```
-README.md
-caption_check/
-  config.json              # single experiment: exp_id matches folder
-  experiment.js            # caption_check_experiment + caption_check_init()
-  stimuli.js               # settings, practice and stimulus lists
-  helpers.js               # URL resolution, sampling, rectangle coordinates
-  plugin-caption-video.js  # jsPsych 7 custom playback/annotation trial
+video_rating_pilot/
+  config.json              # expfactory run assets, estimated time: 10 minutes
+  stimuli.js               # manifest/list paths and script-relative asset base
+  pool.json                # preview media manifest, predictions and provenance
+  lists.json               # eight fixed participant lists
+  pool.js                  # shared manifest/list validation and PID assignment
+  helpers.js               # box geometry, frame sizing, escaping and desktop eligibility
+  plugin-video-rating.js   # playback, feelings, review flags and overlay annotation
+  experiment.js            # loading, instructions, practices and submission
   style.css
-  CREDITS.md               # per-clip attribution and editing notes
-  media/*.mp4              # 20 CC-BY excerpts plus two synthetic practices
-tests/
-  caption_check.test.js    # sampling, stimulus and notice-key checks (run: node --test)
+  CREDITS.md               # existing CC BY attribution audit
+  media/*.mp4              # existing CC BY excerpts and CC0 animations
+scripts/build-lists.js      # seeded list generation; no dependencies
+tests/video_rating_pilot.test.js # Node behavioral tests
+tests/browser-flow.js      # browser interaction/data assertions
 ```
 
-The config `run` list loads the server's jsPsych 7 core, html-button-response, instructions, call-function and CSS assets, then the relative experiment files in order. Those plugin files are present under `expfactory_deploy_local/src/expfactory_deploy_local/static/jspsych7/` in expfactory-deploy. Scripts do not access the jsPsych instance during parsing. The deploy template constructs the instance, calls `caption_check_init()`, and runs `caption_check_experiment`.
+The deploy template loads the jsPsych assets in `config.json`, constructs its instance, calls `video_rating_pilot_init()` and runs `video_rating_pilot_experiment`. The first trial loads and validates both JSON files, then appends the selected timeline using jsPsych's timeline API. Loading failures offer Retry. Files resolve relative to `stimuli.js`, including on battery pages. Keep the JSON files alongside the experiment assets and ensure the deployment serves them.
 
-After each test rating, `window.dataSync()` syncs collected data when available. Finishing the timeline lets the deploy template POST the final dataset. The experiment neither initializes a second jsPsych instance nor redirects participants itself. In deploy's Prolific integration, server-side completion resolves the study's configured completion code or the battery's SimpleCC URL; this repository contains no completion code. Keep participants in the server completion flow after uploading.
+Desktop/laptop use is required: the first trial blocks windows smaller than **1000 × 520 CSS pixels** and devices without a fine pointer. That minimum is the measured height of the tallest screen (annotation, 510 px) at the smallest video frame, on a page rendered like the deploy template. The message reports the current window size and asks participants to maximize the window or zoom out with Ctrl or Cmd and minus, then click Retry. Recruit desktop users with a mouse or trackpad; drawing uses pointer events.
 
-## Stimulus list and sampling
+The first trial chooses one **16:9 video frame** from the browser viewport and uses it for every clip in the session; resizing the window later does not change it. `videoRatingPilot.frameWidth()` takes the largest multiple of 16 pixels that leaves 520 px of width for margins and questions and 220 px of height for the heading, status and buttons, between **480 × 270** and **656 × 369**. Common laptop viewports of 1366 × 640, 1280 × 690 and 1280 × 590, and a 1920 × 970 desktop viewport, all get 656 × 369; 1000 × 520 gets 480 × 270. The chosen size is recorded as `video_frame_width` and `video_frame_height`. Other aspect ratios are letterboxed with `object-fit: contain`; the drawing surface covers only the actual video picture. Normalized coordinates exclude the bars. The video sits beside the current question screen. Feelings, suitability, overlay presence and each present category's annotation use successive screens so the video and active questions fit without scrolling. Presence answers sit beside each category description, and distraction is a horizontal 1–5 scale, to keep those screens short. Credits are paginated in groups of three. No response screen requires an internal scroll area.
 
-Edit `caption_check/stimuli.js`. `captionCheckSettings.sample_size` defaults to 20 and must be a positive integer. `stimulus_set` identifies the version of the list. Each entry in `captionCheckStimuli` has this format (values below are illustrative, not an actual dataset clip):
+**Deployment migration:** the experiment was renamed from `caption_check` to `video_rating_pilot` (display name **Video Rating Pilot**). A deployment registered under the old ID must be re-added under the new ID; update any battery experiment selection as well. The folder, config `exp_id`, and deploy globals must agree. This repository does not perform that migration or deploy the change.
 
-```js
+After each test trial, `window.dataSync()` is called when provided. The normal deploy completion flow submits the final dataset and handles study completion. This experiment does not initialize another jsPsych instance, redirect participants or call Prolific APIs. Test actual upload/completion with the configured battery before recruitment. This change does not deploy the survey.
+
+## Replacing the pool
+
+Change `video_rating_pilot/pool.json`, rebuild `lists.json`, and publish those two files together. Alternatively change their paths in `stimuli.js`. A manifest is JSON with this contract:
+
+```json
 {
-  clip_id: 'unique-clip-id',
-  video_url: 'media/clip.mp4', // or an unsigned public https:// URL
-  pipeline_caption_label: null, // true, false, or null (unknown)
-  source_id: 'source-video-id',
-  source_title: 'Source video title',
-  channel: 'Creator channel',
-  source_url: 'https://www.youtube.com/watch?v=source-video-id',
-  license: 'CC BY', // the 2026-10-28 audit did not record the license version; confirm it before recruiting participants
-  attribution: 'Title — creator; source link; license link; edits made'
+  "pool_id": "classifier-batch-v2",
+  "base_url": "https://public-media.example/clips/",
+  "practice_ids": ["practice-caption", "practice-no-caption"],
+  "clips": [
+    {
+      "clip_id": "catalog-clip-id",
+      "source_id": "source-video-id",
+      "channel_id": "channel-id",
+      "duration": 12.5,
+      "video_url": "catalog-clip-id.mp4",
+      "predicted_labels": {
+        "captions": true,
+        "other_text": false,
+        "logos": null
+      },
+      "license": "optional provenance",
+      "attribution": "optional credit"
+    }
+  ]
 }
 ```
 
-The experiment checks only that each entry has a nonempty `clip_id` and `video_url` and a `pipeline_caption_label` of true, false or null; `source_id`, `license` and `attribution` are recorded as given, and `attribution` is listed on the closing credits screen. `source_title`, `channel` and `source_url` are not recorded; the tests check them against [CREDITS.md](caption_check/CREDITS.md). Use actual observed clip ids. Relative video paths resolve against the directory containing `stimuli.js`, not the battery page. Serve direct browser-playable video (H.264 MP4 is used here), not a YouTube watch/embed page. Hosting must allow playback and seeking, including byte-range requests. The loader needs no code change when approved external media URLs become available.
+The abbreviated example omits the two required practice records. Retain the preview's two practice records and `practice_ids` when importing a dataset pool. Each practice record must specify all three boolean `expected_presence` values. Every clip not listed in `practice_ids` is a main clip. When using an external base URL, set the two practice records' `video_url` values to public absolute URLs for the synthetic media, or host copies with the external pool. `duration` is in seconds; `source_id` identifies the original full video, not the excerpt. `channel_id` must be stable across its videos. Clip IDs must be unique.
 
-When every entry has a true/false label, sampling draws N/2 captioned and N/2 uncaptioned entries without replacement and shuffles their order (`sampling_mode: balanced`). N must then be even, and the experiment stops with an error if either pool has fewer than N/2 entries. When any label is null, the whole list is shuffled and the first N entries are used (`unlabeled_shuffle`); a list shorter than N yields fewer videos, recorded as `actual_sample_size`. The UI never shows pipeline labels. Do not infer caption absence from missing predictions.
+`predicted_labels` is optional. Each category accepts true, false, null or omission. Unknown never means absent. Preserve the classifier's exact clip IDs and predictions so responses can be joined to its batch later. A classifier CSV must be converted into this JSON structure, using its channel/source IDs and durations and mapping predictions explicitly to the three category names; this survey does not run the classifier. The incoming dataset pool can be prepared independently of this survey.
 
-## Data
+`base_url` resolves relative to the manifest URL; each clip's `video_url` resolves against that base. Relative paths and public HTTP(S) absolute URLs are accepted. Credentials, query strings (including signed URLs), fragments and non-HTTP schemes are rejected for both the base and media URLs. Serve direct browser-playable H.264/AAC MP4 files with byte-range support for frame seeking. Cross-origin manifests require CORS; external media must permit browser playback. A media failure offers Retry or Continue without rating and remains unknown in the data.
 
-All rows carry `PROLIFIC_PID`, `STUDY_ID`, and `SESSION_ID` from the URL query (null when absent), plus the stimulus-set identifier, sampling mode, requested N and actual N. The participant ID is read from the deploy server’s `PROLIFIC_ID` parameter. Preview without real participant identifiers; do not publish participant data in this repository.
+**Do not commit dataset media unless it is CC BY licensed.** Any dataset license may be used for separately hosted research clips, with hosting planned as a storage bucket using unlisted, public playback links. The labeled dataset pool is not ready and is not included here. This change adds no downloaded media or credentialed URLs. The existing real clips retain source audio and attribution in [CREDITS.md](video_rating_pilot/CREDITS.md). The audit recorded CC BY on 2026-10-28 without a version; confirm licensing before recruitment. Credits are shown before final submission and escaped as text.
 
-Each `caption_rating` row contains:
+## Building and assigning lists
 
-- `exp_stage` (`practice` or `test`), `clip_id`, `pipeline_caption_label` (null on practice rows), `expected_presence` (the practice answer used for feedback; null on test rows), `source_id`, `license`, `attribution`.
-- `presence_answer`: true/false; null for media failure. No pipeline label is used to score test answers.
-- `notice_times`: video timestamps in seconds of every Space press, in order; the first entry is the primary notice time and sets the annotation frame. `notice_rts_ms`: elapsed wall time of each press since the first `playing` event. Presses before playback starts are ignored. No press is an empty array, not a negative presence rating.
-- `rectangle`: `{x,y,width,height}` as fractions of the displayed video frame, top-left origin, each in [0,1]; null for No or media failure. Rendering preserves the native aspect ratio, so coordinates map to the source frame without letterbox correction. `rectangle_video_time` records the actual paused video time. `annotation_frame_source` distinguishes `first_notice` and `manual_selection`.
-- `presence_rt_ms` since the presence question appeared, `rectangle_rt_ms` from opening annotation until saving, total `rt`, and `playback_start_rt_ms` (all milliseconds).
-- `video_duration` in seconds, intrinsic `video_width`/`video_height`, `played_through`, and `media_error` (null on successful playback). Playback failures offer Retry or Continue without rating and are never scored as caption absence.
+From the repository root, with Node installed:
 
-The separate `attention_check` row records `response`, `rt` and `attention_check_passed`. jsPsych also adds its normal trial metadata and the deploy server records interaction data.
+```sh
+node scripts/build-lists.js video_rating_pilot/pool.json video_rating_pilot/lists.json \
+  --seed pilot-v1
+node --test
+```
 
-## Real CC-BY stimuli
+`--main-count` defaults to **12 main clips** per list, the starting count for a 10-minute session; pass a different value once a pilot sets the final count. `--seed` defaults to `pilot-v1`, and `--list-count` defaults to eight. Given the same input order, seed and options, output is identical. The builder fails if there are too few distinct sources, rather than silently shrinking the study. Runtime validation also rejects missing clips, duplicate sources, stale pool IDs, incorrect lengths and practice clips in lists. Change `pool_id` when replacing the media/prediction pool and rebuild the lists.
 
-The default set contains 20 distinct excerpts spanning all 17 source videos labeled `creativeCommon` in the 2026-10-28 license audit. The files are hosted in `caption_check/media/`; exact catalog clip IDs, source titles, channels, source URLs and CC BY attribution are in `stimuli.js` and [CREDITS.md](caption_check/CREDITS.md). The experiment also presents per-clip credits after the main trials and before final submission.
+Within each list, each original source appears once. The builder stratifies on the caption prediction first: `captioned` (`captions: true`), `not_captioned` (`captions: false`) and `unknown` (null or omitted). It fills each list evenly from the strata the pool contains, so a clip predicted `captions: false` counts as not captioned even when its other labels are missing. Within each caption stratum, it spreads the `other_text` and `logos` predictions (true, false or unknown), then spreads channels and prefers sources/clips used less often by earlier lists. The bundle's `strata` field lists the caption strata found. Constraints are best efforts when the pool is skewed: inspect generated lists for the actual mix before recruiting. Only the two practice trials receive feedback; practice outcomes are recorded without rejecting or terminating participants.
 
-All main-trial pipeline caption labels remain null: no existing caption predictions for these exact clip IDs were found in the inspected local prediction artifacts. Generic on-screen-text or overlay metrics are not speech-caption predictions. Frame inspection is used for choosing practice examples, never to manufacture pipeline labels.
+`PROLIFIC_PID` determines the list by a stable FNV-1a hash modulo the number of lists. Deploy's legacy `PROLIFIC_ID` is used when `PROLIFIC_PID` is absent. Without either, previews choose a random list once at loading. The ID, selected list and assignment mode are recorded. Keep the list bundle unchanged during a study so returning participants retain their assignment. The limited preview has only 17 original sources, so overlap between its 12-clip lists is unavoidable. A larger pool enables more variation between participants.
 
-The two synthetic practice videos are retained because inspection of the real candidates did not establish a clearly captioned example. The real footage covers cooking, shops, driving, brickwork, fireworks and raking leaves; this source-diverse set is not guaranteed to contain a balanced mix of speech captions. Sampling and response collection are unchanged. The default therefore uses `unlabeled_shuffle`.
+## Timing and verification
 
-The main excerpts retain source audio. Video is H.264 at no more than 720p (portrait orientation supported), audio is AAC, and MP4 metadata precedes the media for streaming. Files are each below 10 MB and the total is below 150 MB. Only landscape video above 720p was re-encoded; other streams were copied. Source license observations date to 2026-10-28, with a recorded refresh deadline of 2026-11-27. The audit identifies CC BY but did not record the license version; confirm it before recruiting participants.
+Each trial records total browser time, playback start latency and separate response times for feelings, suitability, overlay presence and annotation. **A short human pilot on the actual classifier pool sets the final count for a 10-minute session.** The builder and committed preview start at **12 main clips**, plus two practice clips with feedback. `config.json` advertises 10 minutes. Use the timing fields to revise `--main-count`, rebuild lists, and update the advertised duration if a pilot shows a different session length.
 
-## Add to expfactory-deploy and preview
+Normal-speed browser measurements on a 15.97-second real clip took **32.14 s, 40.12 s and 56.15 s** for zero, one and three annotated categories. Pacing allowed six seconds for feelings, six for suitability, four for presence and eight per annotation. These are measured browser-flow times under explicit scripted pacing, not human timing or evidence of participant comprehension. The mean is **42.81 seconds per trial** on that clip, or about **39.7 seconds** after replacing playback with the preview pool's 12.89-second mean. Twelve main trials therefore budget about 477 seconds, leaving about two minutes for instructions, two short practices, feedback and credits. Clips with many additions or participants needing more time can exceed this budget; reduce the count after the human pilot if needed.
 
-1. Once the branch is reviewed and merged, log in to [deploy.expfactory.org](https://deploy.expfactory.org/) and add `https://github.com/StanfordDigitalBrainProject/dbsurveys` as an experiment repository in the experiments section.
-2. Pull/refresh that repository. The server discovers the single `caption_check/config.json` experiment.
-3. Open the experiment preview, or add Caption Check to a battery and open its preview link. Confirm that both practice videos play, the notice key works, rectangles can be saved, and final data uploads successfully.
-4. For the approved study, configure consent, sample size and study/battery completion settings; test the battery with `?PROLIFIC_ID=preview-person&STUDY_ID=preview-study&SESSION_ID=preview-session` (or append using `&` when the link already has query parameters). Only then configure recruitment. This repository does not call Prolific APIs.
+`node --test` exercises list building, manifest validation, participant assignment, deploy initialization, the desktop gate, session frame sizing and letterbox geometry. `tests/browser-flow.js` defines `runVideoRatingBrowserTests()` for Chrome on a page loading the experiment scripts. It uses real playback/seeking, forms and pointer-event dispatch to verify the response order, required 9-point answers, multi-select flags, exclusive None, saved per-trial answers, multiple boxes, undo, normalized coordinates, and media-error handling. Synthetic pointer dispatch temporarily replaces pointer capture; native dragging is checked separately.
 
-For local development, install `expfactory_deploy_local` from the expfactory-deploy repository following its README, then run `expfactory_deploy_local -e /absolute/path/to/dbsurveys/caption_check -raw /absolute/path/to/scratch-output` from a scratch directory. It serves the config assets and deploy boot sequence and saves POST data locally. Its web.py static file server ignores HTTP Range requests (it returns 200, not 206), so the browser cannot seek the clips there: answering Yes after a Space press, or moving the frame slider, snaps the video to 0 and shows "Playback problem". Production nginx supports ranges. Verify the annotation step on deploy.expfactory.org, or put a range-capable static server in front of the local server. Keep proof and participant output outside this public repository.
+Local verification passed 11 Node tests and 27 browser assertions. The expfactory-deploy page has no doctype, so browsers render it in quirks mode, which gives every `<form>` a 1em bottom margin unless the stylesheet resets it; `style.css` sets the experiment's form margins to zero. Layout checks used a bootstrap page without a doctype (`document.compatMode` is `BackCompat`) that loads the deploy server's jsPsych 7.3.1 assets in the template's order. Without the reset, the annotation screen at 1000 × 520 needed 527 px and scrolled; with it, the screen needs 510 px. Complete jsPsych runs at viewports of 1000 × 520, 1366 × 640, 1280 × 690, 1280 × 590 and 1920 × 970 checked for page or wrapper scrolling throughout. Each run played the two practices and the first main clip in full and finished the other main trials without playback to reach the credits. Screenshots covered the instruction pages, playback, feelings, suitability, overlay presence, practice and main annotation, feedback, credits and the end page. No screen scrolled, and each session kept one frame size. Boxes dragged at known fractions of the picture were saved with those normalized coordinates on landscape practices and on 360 × 640 portrait clips, where the drawing surface matched the letterboxed picture and excluded the side bars. Windows of 999 × 700 and 1280 × 519 were blocked, and Retry after enlarging the window continued. Each run called `dataSync` after all 12 main trials. These runs accelerated playback; the timing benchmark used normal speed. Proof and screenshots remain outside this repository. The actual deployment upload/completion still needs testing in the approved study setup.
 
-Local verification used the actual server-supplied jsPsych assets and a headless Chrome page mimicking the deploy boot sequence and data POSTs. A complete default run saved 20 unique test entries, two practice ratings, an attention check and all three URL identifiers. Native rectangle drags saved normalized coordinates on the notice frame. Separate cases verified manual frame selection with no notice keypress and missing-media results remaining unknown. Real deployment uploads and Prolific completion still require verification in the approved study setup.
+For local browser verification, serve a scratch bootstrap page with jsPsych 7 and the three plugins listed in `config.json`, load the experiment scripts in config order, then use the same initialization sequence as deploy. Omit the doctype, as the deploy template does, so layout checks run in the same quirks mode as production. Use a range-capable local server for MP4 seeking. Keep the bootstrap, browser evidence and output data outside the repository. A basic static server that ignores Range headers can play videos but fail annotation seeks. Verify final data upload and completion on the actual deployment before recruiting.
+
+## Recorded data
+
+All rows carry `pool_id`, `list_id`, `list_seed`, `assignment_mode`, `main_count`, `actual_sample_size`, `video_frame_width`, `video_frame_height` (the session's frame in CSS pixels) and the URL identifiers `PROLIFIC_PID`, `STUDY_ID`, `SESSION_ID` (null when absent). Each `video_rating` trial includes:
+
+- `exp_stage` (`practice` or `test`), `clip_id`, `source_id`, `channel_id`, `manifest_duration`, `predicted_labels`, `license`, `attribution` and `expected_presence` (null for main clips).
+- `feelings`: `{pleasantness, arousal}`, each an integer from 1 to 9, or null when media failure prevents a usable trial.
+- `suitability_flags`: an array drawn from `sexual`, `violence`, `gore_injury`, `eating_disorder`, `other_upsetting`. `suitability_none` records an explicit None selection. An empty flag array with `suitability_none: true` differs from media failure, which leaves the new answers null. No composite score is calculated.
+- `presence`: category keys `captions`, `other_text`, `logos`, each true/false; all null when media fails and the participant skips.
+- `distraction`: the same keys with ratings 1–5 for present categories and null for absent categories or missing media. Each is the category's overall rating, shared by its boxes.
+- `boxes`: an array of `{x, y, width, height, video_time, category, rating}`. Coordinates are fractions of the video picture (excluding letterbox bars), top-left origin, within [0,1]; `video_time` is the actual paused timestamp in seconds. Multiple boxes per category and frame are allowed. An empty array is expected for all-negative answers or media failure.
+- `rt`, `playback_start_rt_ms`, `feelings_rt_ms`, `suitability_rt_ms`, `presence_rt_ms`, `annotation_rt_ms` in milliseconds; `video_duration` in seconds, intrinsic `video_width`, `video_height`, `played_through`, and `media_error` (null on success).
+
+Synthetic practices also record `practice_correct` (true/false, null on media failure). Main predictions never score participant answers. The previous Space-key notice task and single-rectangle fields have been replaced by category-specific annotation; analyses must use the Video Rating Pilot schema. Keep participant records out of this public repository.
 
 ## Synthetic media provenance
 
-Both silent MP4 files are original FFmpeg test-pattern animations: 640×360, 24 fps, four seconds, H.264/YUV420p with fast-start metadata. `caption.mp4` adds the subtitle “The colors are moving.” after one second; `no-caption.mp4` has no speech captions. The test pattern's technical timecode does not count as a speech caption. The subtitle is deliberately burned into the pixels. These original synthetic assets are dedicated to the public domain under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). These two practice files contain no downloaded footage. Main trials use the attributed real excerpts described above.
+`media/caption.mp4` and `media/no-caption.mp4` are existing original four-second, silent FFmpeg test-pattern animations (640×360, 24 fps, H.264/YUV420p, fast-start). The captioned example adds “The colors are moving.” after one second. Both contain a technical timecode, counted as other floating text; neither has a logo. They are dedicated to [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). No classifier prediction is invented for them; practice expectations are recorded separately.

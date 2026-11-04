@@ -1,6 +1,6 @@
 [
   {
-    "name": "Caption Check",
+    "name": "Video Rating Pilot",
     "template": "jspsych",
     "run": [
       "static/jspsych7/jspsych.js",
@@ -10,17 +10,18 @@
       "static/jspsych7/jspsych.css",
       "style.css",
       "stimuli.js",
+      "pool.js",
       "helpers.js",
-      "plugin-caption-video.js",
+      "plugin-video-rating.js",
       "experiment.js"
     ],
-    "exp_id": "caption_check",
+    "exp_id": "video_rating_pilot",
     "contributors": [
       "Stanford Digital Brain Project"
     ],
-    "time": 8,
+    "time": 10,
     "reference": "https://github.com/StanfordDigitalBrainProject/dbsurveys",
-    "notes": "Real CC-BY excerpts with synthetic practice videos. Replace IRB placeholder before recruitment. Pipeline caption labels are unknown; see CREDITS.md.",
+    "notes": "Manifest-driven video-rating preview: personal feelings, general-audience review flags, and caption/text/logo annotation. CC BY excerpts and synthetic practices; replace consent and pool before recruitment.",
     "publish": "True"
   }
 ]
