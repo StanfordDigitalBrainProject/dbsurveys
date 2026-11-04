@@ -20,7 +20,7 @@ function caption_check_init() {
   });
   jsPsych.data.addProperties({
     exp_id: 'caption_check',
-    PROLIFIC_PID: params.get('PROLIFIC_ID') || params.get('PROLIFIC_PID'),
+    PROLIFIC_PID: params.get('PROLIFIC_ID'),
     STUDY_ID: params.get('STUDY_ID'),
     SESSION_ID: params.get('SESSION_ID'),
     stimulus_set: captionCheckSettings.stimulus_set,

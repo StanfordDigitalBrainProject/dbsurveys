@@ -70,7 +70,7 @@ test('any null label shuffles the whole list', () => {
 });
 
 test('default preview builds 20 test videos and records practice expectations', () => {
-  const context = load('?PROLIFIC_PID=p&STUDY_ID=s&SESSION_ID=x');
+  const context = load('?PROLIFIC_ID=p&STUDY_ID=s&SESSION_ID=x');
   context.caption_check_init();
   const videos = Array.from(context.caption_check_experiment).filter((t) => t.type === 'caption-video');
   const practice = videos.filter((t) => t.data.exp_stage === 'practice');
@@ -87,8 +87,8 @@ test('default preview builds 20 test videos and records practice expectations', 
   assert.equal(practice[0].video_url, assetBase + 'media/caption.mp4');
 });
 
-test('deploy participant parameter takes precedence over the legacy parameter', () => {
-  const context = load('?PROLIFIC_ID=deploy-person&PROLIFIC_PID=legacy-person&STUDY_ID=study&SESSION_ID=session');
+test('participant id is read from the PROLIFIC_ID parameter', () => {
+  const context = load('?PROLIFIC_ID=deploy-person&STUDY_ID=study&SESSION_ID=session');
   context.caption_check_init();
   assert.equal(context.added.PROLIFIC_PID, 'deploy-person');
   assert.equal(context.added.STUDY_ID, 'study');

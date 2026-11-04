@@ -48,7 +48,7 @@ When every entry has a true/false label, sampling draws N/2 captioned and N/2 un
 
 ## Data
 
-All rows carry `PROLIFIC_PID`, `STUDY_ID`, and `SESSION_ID` from the URL query (null when absent), plus the stimulus-set identifier, sampling mode, requested N and actual N. The participant ID reads the deploy server’s `PROLIFIC_ID` parameter first, with `PROLIFIC_PID` accepted as a legacy fallback. Preview without real participant identifiers; do not publish participant data in this repository.
+All rows carry `PROLIFIC_PID`, `STUDY_ID`, and `SESSION_ID` from the URL query (null when absent), plus the stimulus-set identifier, sampling mode, requested N and actual N. The participant ID is read from the deploy server’s `PROLIFIC_ID` parameter. Preview without real participant identifiers; do not publish participant data in this repository.
 
 Each `caption_rating` row contains:
 
