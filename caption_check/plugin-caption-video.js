@@ -15,7 +15,7 @@ var jsPsychCaptionVideo = (function (jspsych) {
         '<h2></h2><p class="prompt">Watch the entire video. Press Space the moment you notice a caption.</p>' +
         '<div class="frame"><video playsinline preload="auto" disablepictureinpicture></video>' +
         '<div class="drawing" hidden aria-label="Drag a rectangle around the caption"><div class="box" hidden></div></div></div>' +
-        '<p class="status" role="status" aria-live="polite">Click Play when you are ready.</p>' +
+        '<p class="status" role="status" aria-live="polite" tabindex="-1">Click Play when you are ready.</p>' +
         '<button class="play">Play video</button>' +
         '<div class="presence" hidden><p>Did this video have any burned-in captions or subtitles?</p>' +
         '<button class="yes">Yes</button><button class="no">No</button></div>' +
@@ -54,7 +54,7 @@ var jsPsychCaptionVideo = (function (jspsych) {
         });
       }
       function notice() {
-        if (phase !== 'watch' || video.paused || video.ended) return;
+        if (phase !== 'watch' || playbackStarted === null || video.paused || video.ended) return;
         noticeTimes.push(video.currentTime);
         noticeRTs.push(performance.now() - playbackStarted);
         status('Caption notice recorded. Please keep watching until the video ends.');
@@ -109,7 +109,7 @@ var jsPsychCaptionVideo = (function (jspsych) {
         presenceStarted = performance.now();
         q('.presence').hidden = false;
         status('Now answer whether the video had captions.');
-        q('.yes').focus();
+        q('.status').focus();
       });
       function clearRectangle() {
         rect = null; anchor = null; annotationTime = null;

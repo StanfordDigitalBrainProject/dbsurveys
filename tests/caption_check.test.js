@@ -78,11 +78,92 @@ test('default preview builds 20 test videos and records practice expectations', 
   assert.equal(testRows.length, 20);
   assert.equal(context.added.sampling_mode, 'unlabeled_shuffle');
   assert.equal(context.added.PROLIFIC_PID, 'p');
+  assert.equal(context.added.STUDY_ID, 's');
+  assert.equal(context.added.SESSION_ID, 'x');
   assert.deepEqual(practice.map((t) => t.data.expected_presence), [true, false]);
   assert.deepEqual(practice.map((t) => t.data.pipeline_caption_label), [null, null]);
   assert.deepEqual(practice.map((t) => t.data.license), ['CC0-1.0', 'CC0-1.0']);
   assert.ok(testRows.every((t) => t.data.expected_presence === null));
   assert.equal(practice[0].video_url, assetBase + 'media/caption.mp4');
+});
+
+test('deploy participant parameter takes precedence over the legacy parameter', () => {
+  const context = load('?PROLIFIC_ID=deploy-person&PROLIFIC_PID=legacy-person&STUDY_ID=study&SESSION_ID=session');
+  context.caption_check_init();
+  assert.equal(context.added.PROLIFIC_PID, 'deploy-person');
+  assert.equal(context.added.STUDY_ID, 'study');
+  assert.equal(context.added.SESSION_ID, 'session');
+});
+
+function videoTrial() {
+  let now = 10000;
+  let result;
+  const document = new EventTarget();
+  const elements = new Map();
+  const element = (selector) => {
+    if (!elements.has(selector)) {
+      const target = new EventTarget();
+      target.focus = () => { document.activeElement = target; };
+      elements.set(selector, target);
+    }
+    return elements.get(selector);
+  };
+  const video = element('video');
+  Object.assign(video, {
+    paused: true, ended: false, currentTime: 0, duration: 4,
+    videoWidth: 640, videoHeight: 360,
+    // A real video can be unpaused while buffering, before 'playing'.
+    play: async () => { video.paused = false; },
+    pause: () => { video.paused = true; }
+  });
+  const context = vm.createContext({
+    document, performance: { now: () => now },
+    jsPsychModule: { ParameterType: { STRING: 'string' } }
+  });
+  vm.runInContext(fs.readFileSync(path.join(dir, 'plugin-caption-video.js'), 'utf8'), context);
+  const plugin = new context.jsPsychCaptionVideo({ finishTrial: (data) => { result = data; } });
+  plugin.trial({ querySelector: element }, { video_url: 'preview.mp4', heading: 'Video' });
+  return {
+    element, video, document,
+    clock: (value) => { now = value; },
+    space: () => {
+      const event = new Event('keydown', { cancelable: true });
+      Object.assign(event, { code: 'Space', repeat: false });
+      document.dispatchEvent(event);
+    },
+    finish: () => {
+      video.ended = true;
+      video.dispatchEvent(new Event('ended'));
+      element('.no').onclick();
+      return result;
+    }
+  };
+}
+
+test('ending playback does not focus an answer button', async () => {
+  const trial = videoTrial();
+  await trial.element('.play').onclick();
+  trial.video.dispatchEvent(new Event('playing'));
+  trial.video.dispatchEvent(new Event('ended'));
+  assert.ok(![trial.element('.yes'), trial.element('.no')].includes(trial.document.activeElement));
+  trial.element('.no').onclick();
+});
+
+test('notice ignores pre-playback presses and measures RT from the playing event', async () => {
+  const trial = videoTrial();
+  trial.space();
+  await trial.element('.play').onclick();
+  trial.clock(10600);
+  trial.space();
+  trial.clock(11000);
+  trial.video.dispatchEvent(new Event('playing'));
+  trial.clock(11300);
+  trial.video.currentTime = 0.3;
+  trial.space();
+  const result = trial.finish();
+  assert.deepEqual(Array.from(result.notice_times), [0.3]);
+  assert.deepEqual(Array.from(result.notice_rts_ms), [300]);
+  assert.equal(result.playback_start_rt_ms, 1000);
 });
 
 test('stimulus checks require clip id, url and label but not license metadata', () => {

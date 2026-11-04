@@ -48,13 +48,13 @@ When every entry has a true/false label, sampling draws N/2 captioned and N/2 un
 
 ## Data
 
-All rows carry `PROLIFIC_PID`, `STUDY_ID`, and `SESSION_ID` from the URL query (null when absent), the stimulus-set identifier, sampling mode, requested N and actual N. Preview without real participant identifiers; do not publish participant data in this repository.
+All rows carry `PROLIFIC_PID`, `STUDY_ID`, and `SESSION_ID` from the URL query (null when absent), plus the stimulus-set identifier, sampling mode, requested N and actual N. The participant ID reads the deploy server’s `PROLIFIC_ID` parameter first, with `PROLIFIC_PID` accepted as a legacy fallback. Preview without real participant identifiers; do not publish participant data in this repository.
 
 Each `caption_rating` row contains:
 
 - `exp_stage` (`practice` or `test`), `clip_id`, `pipeline_caption_label` (null on practice rows), `expected_presence` (the practice answer used for feedback; null on test rows), `source_id`, `license`, `attribution`.
 - `presence_answer`: true/false; null for media failure. No pipeline label is used to score test answers.
-- `notice_times`: video timestamps in seconds of every Space press, in order; the first entry is the primary notice time and sets the annotation frame. `notice_rts_ms`: elapsed wall time of each press since initial playback. No press is an empty array, not a negative presence rating.
+- `notice_times`: video timestamps in seconds of every Space press, in order; the first entry is the primary notice time and sets the annotation frame. `notice_rts_ms`: elapsed wall time of each press since the first `playing` event. Presses before playback starts are ignored. No press is an empty array, not a negative presence rating.
 - `rectangle`: `{x,y,width,height}` as fractions of the displayed video frame, top-left origin, each in [0,1]; null for No or media failure. Rendering preserves the native aspect ratio, so coordinates map to the source frame without letterbox correction. `rectangle_video_time` records the actual paused video time. `annotation_frame_source` distinguishes `first_notice` and `manual_selection`.
 - `presence_rt_ms` since the presence question appeared, `rectangle_rt_ms` from opening annotation until saving, total `rt`, and `playback_start_rt_ms` (all milliseconds).
 - `video_duration` in seconds, intrinsic `video_width`/`video_height`, `played_through`, and `media_error` (null on successful playback). Playback failures offer Retry or Continue without rating and are never scored as caption absence.
@@ -94,7 +94,7 @@ Real-media hosting remains a separate decision: approved public external hosting
 1. Once the branch is reviewed and merged, log in to [deploy.expfactory.org](https://deploy.expfactory.org/) and add `https://github.com/StanfordDigitalBrainProject/dbsurveys` as an experiment repository in the experiments section.
 2. Pull/refresh that repository. The server discovers the single `caption_check/config.json` experiment.
 3. Open the experiment preview, or add Caption Check to a battery and open its preview link. Confirm that both practice videos play, the notice key works, rectangles can be saved, and final data uploads successfully.
-4. For the approved study, configure consent, real media, sample size and study/battery completion settings; test the battery with `?PROLIFIC_PID=preview-person&STUDY_ID=preview-study&SESSION_ID=preview-session` (or append using `&` when the link already has query parameters). Only then configure recruitment. This repository does not call Prolific APIs.
+4. For the approved study, configure consent, real media, sample size and study/battery completion settings; test the battery with `?PROLIFIC_ID=preview-person&STUDY_ID=preview-study&SESSION_ID=preview-session` (or append using `&` when the link already has query parameters). Only then configure recruitment. This repository does not call Prolific APIs.
 
 For local development, install `expfactory_deploy_local` from the expfactory-deploy repository following its README, then run `expfactory_deploy_local -e /absolute/path/to/dbsurveys/caption_check -raw /absolute/path/to/scratch-output` from a scratch directory. It serves the config assets and deploy boot sequence and saves POST data locally. Its web.py static file server ignores HTTP Range requests (it returns 200, not 206), so the browser cannot seek the clips there: answering Yes after a Space press, or moving the frame slider, snaps the video to 0 and shows "Playback problem". Production nginx supports ranges. Verify the annotation step on deploy.expfactory.org, or put a range-capable static server in front of the local server. Keep proof and participant output outside this public repository.
 
