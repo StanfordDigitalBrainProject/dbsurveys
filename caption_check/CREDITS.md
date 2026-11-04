@@ -1,6 +1,6 @@
 # Video credits
 
-The main-trial videos are excerpts of the source videos listed below. Each source was labeled Creative Commons (CC BY) on YouTube in the 2026-10-28 license audit. Source titles and channel names are reproduced for attribution. The audit records the license family, not a verified version number. See [YouTube Creative Commons licensing](https://support.google.com/youtube/answer/2797468) and [CC BY](https://creativecommons.org/licenses/by/).
+The main-trial videos are excerpts of the source videos listed below. Each source was labeled Creative Commons (CC BY) on YouTube in the 2026-10-28 license audit. Source titles and channel names are reproduced for attribution. The audit did not record the license version; it should be confirmed before recruiting participants. See [YouTube Creative Commons licensing](https://support.google.com/youtube/answer/2797468) and [CC BY](https://creativecommons.org/licenses/by/).
 
 Excerpts retain the source audio and video content. Landscape clips above 720p were downscaled to at most 1280×720 and encoded as H.264; other video and all audio streams were copied. MP4 metadata was moved to the front for streaming. No speech captions were added or removed. Clip IDs identify the original preprocessing segments; part numbers are segment identifiers, not timestamps.
 

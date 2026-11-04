@@ -40,7 +40,7 @@ Edit `caption_check/stimuli.js`. `captionCheckSettings.sample_size` defaults to 
   source_title: 'Source video title',
   channel: 'Creator channel',
   source_url: 'https://www.youtube.com/watch?v=source-video-id',
-  license: 'CC-BY-3.0', // exact license/version must be verified for actual media
+  license: 'CC BY', // the 2026-10-28 audit did not record the license version; confirm it before recruiting participants
   attribution: 'Title — creator; source link; license link; edits made'
 }
 ```
@@ -72,7 +72,7 @@ All main-trial pipeline caption labels remain null: no existing caption predicti
 
 The two synthetic practice videos are retained because inspection of the real candidates did not establish a clearly captioned example. The real footage covers cooking, shops, driving, brickwork, fireworks and raking leaves; this source-diverse set is not guaranteed to contain a balanced mix of speech captions. Sampling and response collection are unchanged. The default therefore uses `unlabeled_shuffle`.
 
-The main excerpts retain source audio. Video is H.264 at no more than 720p (portrait orientation supported), audio is AAC, and MP4 metadata precedes the media for streaming. Files are each below 10 MB and the total is below 150 MB. Only landscape video above 720p was re-encoded; other streams were copied. Source license observations date to 2026-10-28, with a recorded refresh deadline of 2026-11-27; the audit identifies CC BY without confirming a version number.
+The main excerpts retain source audio. Video is H.264 at no more than 720p (portrait orientation supported), audio is AAC, and MP4 metadata precedes the media for streaming. Files are each below 10 MB and the total is below 150 MB. Only landscape video above 720p was re-encoded; other streams were copied. Source license observations date to 2026-10-28, with a recorded refresh deadline of 2026-11-27. The audit identifies CC BY but did not record the license version; confirm it before recruiting participants.
 
 ## Add to expfactory-deploy and preview
 
