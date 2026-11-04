@@ -1,0 +1,24 @@
+[
+  {
+    "name": "Caption Check",
+    "template": "jspsych",
+    "run": [
+      "static/jspsych7/jspsych.js",
+      "static/jspsych7/plugin-html-button-response.js",
+      "static/jspsych7/plugin-instructions.js",
+      "static/jspsych7/plugin-call-function.js",
+      "static/jspsych7/jspsych.css",
+      "style.css",
+      "stimuli.js",
+      "helpers.js",
+      "plugin-caption-video.js",
+      "experiment.js"
+    ],
+    "exp_id": "caption_check",
+    "contributors": ["Stanford Digital Brain Project"],
+    "time": 5,
+    "reference": "https://github.com/StanfordDigitalBrainProject/dbsurveys",
+    "notes": "Synthetic interim preview; replace IRB placeholder and supply approved real stimuli before recruitment. Pipeline labels are unknown.",
+    "publish": "True"
+  }
+]
