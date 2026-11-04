@@ -10,6 +10,7 @@
       "static/jspsych7/jspsych.css",
       "style.css",
       "stimuli.js",
+      "pool.js",
       "helpers.js",
       "plugin-caption-video.js",
       "experiment.js"
@@ -18,9 +19,9 @@
     "contributors": [
       "Stanford Digital Brain Project"
     ],
-    "time": 8,
+    "time": 10,
     "reference": "https://github.com/StanfordDigitalBrainProject/dbsurveys",
-    "notes": "Real CC-BY excerpts with synthetic practice videos. Replace IRB placeholder before recruitment. Pipeline caption labels are unknown; see CREDITS.md.",
+    "notes": "Manifest-driven caption, floating text and logo annotation preview. CC BY excerpts and synthetic checks; replace consent and pool before recruitment.",
     "publish": "True"
   }
 ]

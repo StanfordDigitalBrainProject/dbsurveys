@@ -14,3 +14,13 @@
 
 .video-credits { max-height: 50vh; overflow-y: auto; text-align: left; overflow-wrap: anywhere; }
 .video-credits li { margin-bottom: 0.75em; }
+.caption-check { max-width: 900px; }
+.caption-check .frame { width: fit-content; max-width: 100%; margin: 0 auto; }
+.caption-check video { width: auto; max-width: 100%; max-height: 45vh; }
+.caption-check fieldset { border: 1px solid #aaa; border-radius: 5px; margin: 12px 0; padding: 10px 14px; }
+.caption-check legend { font-weight: 600; }
+.caption-check fieldset p { margin: 0 0 8px; }
+.caption-check label { display: inline-block; padding: 8px; }
+.caption-check .distraction label { display: block; }
+.caption-check input[type=radio] { margin-right: 8px; }
+.caption-check .annotation > label { display: block; }

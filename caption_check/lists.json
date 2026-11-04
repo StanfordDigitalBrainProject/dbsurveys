@@ -1,0 +1,194 @@
+{
+  "pool_id": "cc-by-preview-v2",
+  "seed": "preview-v2",
+  "main_count": 16,
+  "strata": [
+    "unknown"
+  ],
+  "lists": [
+    {
+      "list_id": "cc-by-preview-v2-preview-v2-1",
+      "clip_ids": [
+        "IA9conOsNR8_part_00000000",
+        "jY4AJZp3qZk_part_00000000",
+        "PC6Y_ZQpxm0_part_00000001",
+        "Gs168pJ9vjU_part_00000000",
+        "5xS2F_UGAuA_part_00000000",
+        "Kvdoe5yFUxI_part_00000000",
+        "w_o2BiYyXvE_part_00000000",
+        "WFxDxY-ab5Y_part_00000000",
+        "S4iW7PiSKqU_part_00000000",
+        "GDYLlBpLaJY_part_00000009",
+        "practice-no-caption",
+        "practice-caption",
+        "wmf91vFReFY_part_00000002",
+        "pIgwhuZNUt0_part_00000000",
+        "1KUxzWSX_VM_part_00000000",
+        "165OCgze4x4_part_00000001",
+        "ss-bodT36qQ_part_00000000",
+        "_3Zz-gPaoMA_part_00000000"
+      ]
+    },
+    {
+      "list_id": "cc-by-preview-v2-preview-v2-2",
+      "clip_ids": [
+        "Kvdoe5yFUxI_part_00000000",
+        "w_o2BiYyXvE_part_00000000",
+        "PC6Y_ZQpxm0_part_00000001",
+        "JOvDTaWZ5c8_part_00000000",
+        "IA9conOsNR8_part_00000000",
+        "pIgwhuZNUt0_part_00000000",
+        "jY4AJZp3qZk_part_00000000",
+        "wmf91vFReFY_part_00000002",
+        "1KUxzWSX_VM_part_00000002",
+        "5xS2F_UGAuA_part_00000002",
+        "_3Zz-gPaoMA_part_00000000",
+        "practice-no-caption",
+        "GDYLlBpLaJY_part_00000009",
+        "WFxDxY-ab5Y_part_00000000",
+        "165OCgze4x4_part_00000000",
+        "Gs168pJ9vjU_part_00000000",
+        "practice-caption",
+        "S4iW7PiSKqU_part_00000000"
+      ]
+    },
+    {
+      "list_id": "cc-by-preview-v2-preview-v2-3",
+      "clip_ids": [
+        "5xS2F_UGAuA_part_00000000",
+        "S4iW7PiSKqU_part_00000000",
+        "w_o2BiYyXvE_part_00000000",
+        "pIgwhuZNUt0_part_00000000",
+        "Kvdoe5yFUxI_part_00000000",
+        "WFxDxY-ab5Y_part_00000000",
+        "JOvDTaWZ5c8_part_00000000",
+        "practice-caption",
+        "wmf91vFReFY_part_00000002",
+        "jY4AJZp3qZk_part_00000000",
+        "ss-bodT36qQ_part_00000000",
+        "PC6Y_ZQpxm0_part_00000001",
+        "1KUxzWSX_VM_part_00000000",
+        "GDYLlBpLaJY_part_00000009",
+        "165OCgze4x4_part_00000000",
+        "practice-no-caption",
+        "Gs168pJ9vjU_part_00000000",
+        "_3Zz-gPaoMA_part_00000000"
+      ]
+    },
+    {
+      "list_id": "cc-by-preview-v2-preview-v2-4",
+      "clip_ids": [
+        "jY4AJZp3qZk_part_00000000",
+        "wmf91vFReFY_part_00000002",
+        "Gs168pJ9vjU_part_00000000",
+        "_3Zz-gPaoMA_part_00000000",
+        "IA9conOsNR8_part_00000000",
+        "practice-caption",
+        "WFxDxY-ab5Y_part_00000000",
+        "PC6Y_ZQpxm0_part_00000001",
+        "5xS2F_UGAuA_part_00000002",
+        "w_o2BiYyXvE_part_00000000",
+        "165OCgze4x4_part_00000001",
+        "practice-no-caption",
+        "1KUxzWSX_VM_part_00000002",
+        "Kvdoe5yFUxI_part_00000000",
+        "pIgwhuZNUt0_part_00000000",
+        "S4iW7PiSKqU_part_00000000",
+        "JOvDTaWZ5c8_part_00000000",
+        "ss-bodT36qQ_part_00000000"
+      ]
+    },
+    {
+      "list_id": "cc-by-preview-v2-preview-v2-5",
+      "clip_ids": [
+        "practice-caption",
+        "Kvdoe5yFUxI_part_00000000",
+        "GDYLlBpLaJY_part_00000009",
+        "PC6Y_ZQpxm0_part_00000001",
+        "JOvDTaWZ5c8_part_00000000",
+        "Gs168pJ9vjU_part_00000000",
+        "IA9conOsNR8_part_00000000",
+        "ss-bodT36qQ_part_00000000",
+        "jY4AJZp3qZk_part_00000000",
+        "pIgwhuZNUt0_part_00000000",
+        "5xS2F_UGAuA_part_00000002",
+        "_3Zz-gPaoMA_part_00000000",
+        "S4iW7PiSKqU_part_00000000",
+        "wmf91vFReFY_part_00000002",
+        "practice-no-caption",
+        "1KUxzWSX_VM_part_00000000",
+        "165OCgze4x4_part_00000000",
+        "w_o2BiYyXvE_part_00000000"
+      ]
+    },
+    {
+      "list_id": "cc-by-preview-v2-preview-v2-6",
+      "clip_ids": [
+        "wmf91vFReFY_part_00000002",
+        "_3Zz-gPaoMA_part_00000000",
+        "PC6Y_ZQpxm0_part_00000001",
+        "IA9conOsNR8_part_00000000",
+        "jY4AJZp3qZk_part_00000000",
+        "ss-bodT36qQ_part_00000000",
+        "JOvDTaWZ5c8_part_00000000",
+        "pIgwhuZNUt0_part_00000000",
+        "S4iW7PiSKqU_part_00000000",
+        "practice-caption",
+        "WFxDxY-ab5Y_part_00000000",
+        "Kvdoe5yFUxI_part_00000000",
+        "w_o2BiYyXvE_part_00000000",
+        "practice-no-caption",
+        "5xS2F_UGAuA_part_00000000",
+        "165OCgze4x4_part_00000001",
+        "1KUxzWSX_VM_part_00000002",
+        "GDYLlBpLaJY_part_00000009"
+      ]
+    },
+    {
+      "list_id": "cc-by-preview-v2-preview-v2-7",
+      "clip_ids": [
+        "Gs168pJ9vjU_part_00000000",
+        "5xS2F_UGAuA_part_00000000",
+        "pIgwhuZNUt0_part_00000000",
+        "wmf91vFReFY_part_00000002",
+        "1KUxzWSX_VM_part_00000000",
+        "w_o2BiYyXvE_part_00000000",
+        "PC6Y_ZQpxm0_part_00000001",
+        "165OCgze4x4_part_00000001",
+        "IA9conOsNR8_part_00000000",
+        "jY4AJZp3qZk_part_00000000",
+        "GDYLlBpLaJY_part_00000009",
+        "ss-bodT36qQ_part_00000000",
+        "practice-caption",
+        "JOvDTaWZ5c8_part_00000000",
+        "_3Zz-gPaoMA_part_00000000",
+        "practice-no-caption",
+        "WFxDxY-ab5Y_part_00000000",
+        "Kvdoe5yFUxI_part_00000000"
+      ]
+    },
+    {
+      "list_id": "cc-by-preview-v2-preview-v2-8",
+      "clip_ids": [
+        "165OCgze4x4_part_00000000",
+        "Gs168pJ9vjU_part_00000000",
+        "_3Zz-gPaoMA_part_00000000",
+        "Kvdoe5yFUxI_part_00000000",
+        "1KUxzWSX_VM_part_00000002",
+        "5xS2F_UGAuA_part_00000002",
+        "PC6Y_ZQpxm0_part_00000001",
+        "pIgwhuZNUt0_part_00000000",
+        "S4iW7PiSKqU_part_00000000",
+        "WFxDxY-ab5Y_part_00000000",
+        "w_o2BiYyXvE_part_00000000",
+        "GDYLlBpLaJY_part_00000009",
+        "practice-caption",
+        "practice-no-caption",
+        "wmf91vFReFY_part_00000002",
+        "JOvDTaWZ5c8_part_00000000",
+        "IA9conOsNR8_part_00000000",
+        "ss-bodT36qQ_part_00000000"
+      ]
+    }
+  ]
+}
