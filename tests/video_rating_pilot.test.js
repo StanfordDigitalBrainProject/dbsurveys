@@ -156,12 +156,16 @@ test('legacy deploy identifier remains supported and small/coarse devices are bl
   assert.equal(added.PROLIFIC_PID,'legacy');assert.equal(context.videoRatingPilot.desktop(),true);
   context.window.innerWidth=390;assert.equal(context.videoRatingPilot.desktop(),false);
   context.window.innerWidth=1280;context.window.matchMedia=()=>({matches:false});assert.equal(context.videoRatingPilot.desktop(),false);
+  context.window.matchMedia=()=>({matches:true});
+  for(const [w,h,ok] of [[1366,640,true],[1280,590,true],[1000,520,true],[999,700,false],[1280,519,false]]) {
+    Object.assign(context.window,{innerWidth:w,innerHeight:h});assert.equal(context.videoRatingPilot.desktop(),ok,`${w}x${h}`);
+  }
   assert.deepEqual(JSON.parse(JSON.stringify(context.videoRatingPilot.rectangle({x:.8,y:.9},{x:.2,y:.3}))),
     {x:.2,y:.3,width:.6000000000000001,height:.6000000000000001});
 });
 
 test('CLI writes a consumer-valid bundle and fails explicitly for insufficient sources', () => {
-  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'caption-list-test-'));
+  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'video-rating-list-test-'));
   try {
     const out=path.join(tmp,'lists.json');const script=path.join(dir,'../scripts/build-lists.js');
     const run=spawnSync(process.execPath,[script,path.join(dir,'pool.json'),out,'--seed','cli']);
@@ -183,5 +187,17 @@ test('letterbox geometry normalizes to the video picture, excluding bars', () =>
   assert.deepEqual(rect(1080,1920),{x:164.0625,y:0,width:151.875,height:270});
   assert.deepEqual(rect(1000,1000),{x:105,y:0,width:270,height:270});
   assert.deepEqual(rect(2400,1000),{x:0,y:35,width:480,height:200});
-  context.window.innerHeight=719;assert.equal(context.videoRatingPilot.desktop(),false);
+});
+
+test('session frame is one 16:9 size chosen from the viewport, never below the minimum', () => {
+  const {context}=runtime();
+  const frame=(w,h)=>context.videoRatingPilot.frameWidth(w,h);
+  assert.equal(frame(1000,520),480);
+  for(const [w,h] of [[1366,640],[1280,690],[1280,590],[1920,970]]) assert.equal(frame(w,h),656,`${w}x${h}`);
+  assert.equal(frame(1300,560),592);assert.equal(frame(1100,520),528);
+  for(let w=1000;w<=2560;w+=37) for(let h=520;h<=1440;h+=29) {
+    const width=frame(w,h);
+    assert.ok(width>=480 && width<=656 && width%16===0,`${w}x${h}: ${width}`);
+    assert.ok(width===480 || (width<=w-520 && width*9/16<=h-220),`${w}x${h}: ${width} exceeds the window`);
+  }
 });

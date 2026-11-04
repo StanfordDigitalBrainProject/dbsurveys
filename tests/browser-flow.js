@@ -42,10 +42,9 @@ async function runVideoRatingBrowserTests() {
   feelings();assert(!q('.suitability').hidden && q('.presence').hidden,'suitability comes second');
   assert(q('.suitability-next').disabled,'suitability requires an explicit selection');
   q('input[value="violence"]').click();q('input[value="other_upsetting"]').click();
-  q('textarea').value='test note';assert(!q('.other-details').hidden,'other content reveals an optional description');
   q('input[name="suitability"][value="none"]').click();
-  assert(!q('input[value="violence"]').checked && !q('input[value="other_upsetting"]').checked && q('.other-details').hidden && !q('textarea').value,'None clears all flags and hidden free text');
-  q('input[value="violence"]').click();q('input[value="other_upsetting"]').click();q('textarea').value='Brief test note';
+  assert(!q('input[value="violence"]').checked && !q('input[value="other_upsetting"]').checked,'None clears all flags');
+  q('input[value="violence"]').click();q('input[value="other_upsetting"]').click();
   assert(!q('input[value="none"]').checked,'selecting a flag clears None');
   q('.suitability-next').click();assert(!q('.presence').hidden,'overlays come third');
   q('input[name="captions"][value="yes"]').click();q('.presence button').click();
@@ -58,7 +57,7 @@ async function runVideoRatingBrowserTests() {
   q('.undo').click();assert(q('.box-count').textContent.startsWith('1 '),'undo removes only the last box');
   draw(.2,.1,.3,.15);save(1);await seek(1.5);draw(.1,.1,.4,.1);save(5);
   assert(result.feelings.pleasantness===9 && result.feelings.arousal===1,'9-point feelings answers are saved without defaults');
-  assert(result.suitability_flags.join(',')==='violence,other_upsetting' && result.suitability_none===false && result.suitability_other_text==='Brief test note','multiple suitability flags and optional detail are saved without an overall score');
+  assert(result.suitability_flags.join(',')==='violence,other_upsetting' && result.suitability_none===false && !('suitability_other_text' in result),'multiple suitability flags are saved without free text or an overall score');
   assert(result.played_through && result.media_error===null,'successful video records full playback');
   assert(result.presence.captions && result.presence.other_text && !result.presence.logos,'presence remains separate across categories');
   assert(result.distraction.captions===1 && result.distraction.other_text===5 && result.distraction.logos===null,'present and not distracting is allowed; absent ratings remain null');
@@ -68,7 +67,7 @@ async function runVideoRatingBrowserTests() {
   assert(result.rt>=4000 && result.presence_rt_ms>=0 && result.annotation_rt_ms>=0,'trial timing records actual elapsed browser time');
   const annotated=result;
   start('media/no-caption.mp4');await play();feelings();suitability();presence({captions:false,other_text:false,logos:false});
-  assert(result.suitability_none===true && result.suitability_flags.length===0 && result.suitability_other_text===null,'None is recorded as an explicit suitability answer');
+  assert(result.suitability_none===true && result.suitability_flags.length===0,'None is recorded as an explicit suitability answer');
   assert(result.boxes.length===0 && Object.values(result.distraction).every(v=>v===null),'all-negative trial ends without drawing or ratings');
   start('media/does-not-exist.mp4');await until(()=>!q('.error').hidden);
   q('.retry').click();assert(!q('.play').hidden,'media errors offer retry');

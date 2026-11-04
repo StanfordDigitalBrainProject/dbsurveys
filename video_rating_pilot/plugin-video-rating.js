@@ -23,7 +23,7 @@ var jsPsychVideoRating = (function (jspsych) {
       var presence = {}, ratings = {}, boxes = [], current = 0, active = [], anchor = null, draft = null;
       var playedThrough = false, mediaError = null, playbackStarted = null, presenceStarted = null, presenceRT = null;
       var annotationStarted = null, requestedFrame = 0;
-      var feelings = null, suitabilityFlags = null, suitabilityNone = null, suitabilityText = null;
+      var feelings = null, suitabilityFlags = null, suitabilityNone = null;
       var feelingsStarted = null, suitabilityStarted = null, feelingsRT = null, suitabilityRT = null;
       display.innerHTML = '<section class="video-rating-pilot"><h2></h2>' +
         '<p class="watch-prompt">Watch the whole clip, then tell us how it made you feel.</p><div class="trial-grid"><div class="video-panel">' +
@@ -39,22 +39,22 @@ var jsPsychVideoRating = (function (jspsych) {
         '<p class="hint">These flags help researchers review clips. They do not automatically exclude a clip.</p>' +
         suitabilityOptions.map(function(option) {
           return '<label class="flag"><input type="checkbox" name="suitability" value="' + option[0] + '"> ' + option[1] + '</label>';
-        }).join('') + '<label class="other-details" hidden>Optional short description<textarea maxlength="240" rows="2"></textarea></label>' +
+        }).join('') +
         '<button class="suitability-next" type="submit" disabled>Continue</button></form>' +
         '<form class="presence" hidden><h3>What appeared anywhere in this video?</h3>' + categories.map(function (c) {
-          return '<fieldset><legend>' + c.label + '</legend><p>' + c.description + '</p>' +
+          return '<fieldset><legend>' + c.label + '</legend><p class="hint">' + c.description + '</p>' +
             '<label><input type="radio" name="' + c.id + '" value="yes" required> Yes</label> ' +
             '<label><input type="radio" name="' + c.id + '" value="no" required> No</label></fieldset>';
         }).join('') + '<button type="submit">Continue</button></form>' +
         '<form class="annotation" hidden><h3 class="category-title"></h3>' +
-        '<p>Choose a frame, then drag a tight box around each example. You can draw more than one box, including on different frames.</p>' +
+        '<p class="hint">Choose a frame, then drag a tight box around each example. You can draw more than one box, including on different frames.</p>' +
         '<label>Video frame <output class="frame-time">0.00 s</output><input class="seek" type="range" min="0" value="0" step="0.01"></label>' +
         '<p class="box-count"></p><button class="undo" type="button">Undo last box</button>' +
         '<button class="clear" type="button">Clear boxes for this category</button>' +
-        '<fieldset class="distraction"><legend>How distracting was this category overall?</legend>' +
+        '<fieldset class="distraction"><legend>How distracting was this category overall?</legend><div class="scale">' +
         ['Not at all','Slightly','Moderately','Very','Extremely'].map(function (label, i) {
-          return '<label><input type="radio" name="distraction" value="' + (i+1) + '" required> ' + (i+1) + ' — ' + label + '</label>';
-        }).join('') + '</fieldset><button class="save" type="submit" disabled>Save category and continue</button></form>' +
+          return '<label><input type="radio" name="distraction" value="' + (i+1) + '" required><span>' + (i+1) + '</span><span class="hint">' + label + '</span></label>';
+        }).join('') + '</div></fieldset><button class="save" type="submit" disabled>Save category and continue</button></form>' +
         '<div class="error" hidden><p>Playback failed. You may retry or continue; missing ratings stay unknown.</p>' +
         '<button class="retry">Retry video</button><button class="skip">Continue without rating</button></div></div></div></section>';
       var q = function (s) {return display.querySelector(s);};
@@ -65,7 +65,7 @@ var jsPsychVideoRating = (function (jspsych) {
         if (phase === 'finished') return;
         phase = 'finished'; video.pause();
         jsPsych.finishTrial({feelings:feelings, suitability_flags:suitabilityFlags,
-          suitability_none:suitabilityNone, suitability_other_text:suitabilityText,
+          suitability_none:suitabilityNone,
           feelings_rt_ms:feelingsRT, suitability_rt_ms:suitabilityRT,
           presence:presence, distraction:ratings, boxes:boxes,
           presence_rt_ms:presenceRT, annotation_rt_ms:annotationStarted === null ? null : performance.now()-annotationStarted,
@@ -115,9 +115,6 @@ var jsPsychVideoRating = (function (jspsych) {
           if(checked.value==='none') display.querySelectorAll('input[name="suitability"]').forEach(function(input){if(input!==checked) input.checked=false;});
           else q('input[name="suitability"][value="none"]').checked=false;
         }
-        var other=q('input[name="suitability"][value="other_upsetting"]').checked;
-        q('.other-details').hidden=!other;
-        if(!other) q('textarea').value='';
         q('.suitability-next').disabled=!q('input[name="suitability"]:checked');
       };
       q('.suitability').onsubmit=function(event) {
@@ -125,7 +122,6 @@ var jsPsychVideoRating = (function (jspsych) {
         if(phase!=='suitability' || !q('input[name="suitability"]:checked')) return;
         suitabilityFlags=Array.from(display.querySelectorAll('input[name="suitability"]:checked')).map(function(input){return input.value;}).filter(function(value){return value!=='none';});
         suitabilityNone=q('input[name="suitability"][value="none"]').checked;
-        suitabilityText=suitabilityFlags.includes('other_upsetting') ? q('textarea').value.trim() || null : null;
         suitabilityRT=performance.now()-suitabilityStarted;
         q('.suitability').hidden=true; phase='presence'; presenceStarted=performance.now();
         q('.presence').hidden=false; status('Finally, answer Yes or No for each overlay category.');
@@ -203,15 +199,15 @@ var jsPsychVideoRating = (function (jspsych) {
         current++; nextCategory();
       };
       q('.skip').onclick=function(){
-        feelings=null; suitabilityFlags=null; suitabilityNone=null; suitabilityText=null;
+        feelings=null; suitabilityFlags=null; suitabilityNone=null;
         categories.forEach(function(c){presence[c.id]=null; ratings[c.id]=null;}); boxes=[]; finish();
       };
       q('.retry').onclick=function(){
         phase='ready'; mediaError=null; playedThrough=false; playbackStarted=null; presenceStarted=null;
         presenceRT=null; annotationStarted=null; presence={}; ratings={}; boxes=[]; active=[]; current=0; anchor=null; draft=null;
-        feelings=null; suitabilityFlags=null; suitabilityNone=null; suitabilityText=null;
+        feelings=null; suitabilityFlags=null; suitabilityNone=null;
         feelingsStarted=null; suitabilityStarted=null; feelingsRT=null; suitabilityRT=null;
-        q('.feelings').reset(); q('.suitability').reset(); q('.other-details').hidden=true; q('.suitability-next').disabled=true;
+        q('.feelings').reset(); q('.suitability').reset(); q('.suitability-next').disabled=true;
         q('.presence').reset(); q('.annotation').reset(); q('.error').hidden=true; q('.play').hidden=false;
         video.load(); status('Click Play to retry from the beginning.');
       };

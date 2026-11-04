@@ -75,5 +75,5 @@
   var api = { categories: categories, hash: hash, random: random, mediaURL: mediaURL,
     validatePool: validatePool, mainClips: mainClips, validateLists: validateLists, chooseList: chooseList };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
-  else root.captionPool = api;
+  else root.videoRatingPool = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
