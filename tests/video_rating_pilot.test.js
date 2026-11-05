@@ -30,7 +30,7 @@ const captionState = c => (c.predicted_labels || {}).captions;
 
 test('seeded lists balance caption predictions, spread other labels, use distinct sources and spread channels', () => {
   const pool = largePool();
-  assert.equal(buildLists(pool).main_count,12);
+  assert.equal(buildLists(pool).main_count,11);
   const bundle = buildLists(pool,{seed:'proof',listCount:4,mainCount:24});
   assert.deepEqual(bundle.strata,['captioned','not_captioned']);
   assert.deepEqual(bundle,buildLists(pool,{seed:'proof',listCount:4,mainCount:24}));
@@ -60,7 +60,7 @@ test('seeded lists balance caption predictions, spread other labels, use distinc
 test('caption-only predictions balance captioned, not captioned and unknown clips', () => {
   const pool = poolWith('caption-only-fixture',90,i => i<15 ? {captions:true} : i<30 ? {captions:false} :
     i%2 ? {captions:null} : undefined);
-  const bundle = buildLists(pool);
+  const bundle = buildLists(pool,{mainCount:12});
   assert.equal(bundle.main_count,12);
   assert.deepEqual(bundle.strata,['captioned','not_captioned','unknown']);
   const byId = new Map(pool.clips.map(c => [c.clip_id,c]));
@@ -79,9 +79,9 @@ test('preview is reproducible, one source per list, and cannot silently shrink a
   assert.throws(()=>buildLists(preview,{mainCount:18}),/Not enough distinct sources/);
   for(const list of fixed.lists) {
     const mains = list.clip_ids.map(id=>preview.clips.find(c=>c.clip_id===id));
-    assert.equal(mains.length,12);
+    assert.equal(mains.length,11);
     assert.ok(mains.every(c=>!preview.practice_ids.includes(c.clip_id)));
-    assert.equal(new Set(mains.map(c=>c.source_id)).size,12);
+    assert.equal(new Set(mains.map(c=>c.source_id)).size,11);
     assert.ok(mains.every(c=>c.license==='CC BY' && c.predicted_labels.captions===null));
   }
   for(const clip of preview.clips) assert.ok(fs.statSync(path.join(dir,clip.video_url)).size>0);
@@ -123,7 +123,7 @@ function runtime(search='') {
   const context=vm.createContext({URL,URLSearchParams,Map,Set,fetch,
     document:{currentScript:{src:'https://example.org/assets/stimuli.js'}},
     window:{location:{search},innerWidth:1280,innerHeight:720,matchMedia:()=>({matches:true})},
-    jsPsych:{data:{addProperties:p=>Object.assign(added,p)}},
+    jsPsych:{data:{addProperties:p=>Object.assign(added,p),get:()=>({last:()=>({values:()=>[added.lastTrial]})})}},
     jsPsychInstructions:'instructions',jsPsychHtmlButtonResponse:'buttons',jsPsychCallFunction:'call',jsPsychVideoRating:'video'});
   for(const file of ['stimuli.js','pool.js','helpers.js','experiment.js']) vm.runInContext(fs.readFileSync(path.join(dir,file),'utf8'),context);
   return {context,added};
@@ -150,6 +150,26 @@ test('timeline records identifiers, assignments, labels and practice outcomes wi
   context.video_rating_pilot_init();assert.equal(context.video_rating_pilot_experiment.length,1);
 });
 
+test('practices and instructions teach both playback keys, and feedback reports recorded presses', () => {
+  const {context,added}=runtime();
+  const timeline=Array.from(context.videoRatingPilotTimeline(preview,fixed,new URLSearchParams()));
+  const pages=timeline.find(t=>t.type==='instructions').pages.join(' ');
+  assert.match(pages,/Press <strong>Space<\/strong> as soon as you notice captions, other added text or a logo/);
+  assert.match(pages,/Press <strong>D<\/strong> whenever something is distracting or inappropriate/);
+  const videos=timeline.filter(t=>t.type==='video');
+  const [first,second]=videos.filter(t=>t.data.exp_stage==='practice');
+  assert.match(first.prompt,/press Space/);assert.match(second.prompt,/press D once/);
+  assert.ok(videos.filter(t=>t.data.exp_stage==='test').every(t=>!('prompt' in t)),'main clips use the plugin default prompt');
+  const feedback=timeline.filter(t=>t.data && t.data.trial_id==='practice_feedback');
+  added.lastTrial={media_error:null,practice_correct:true,notice_times:[1.23,2.5],distracting_times:[]};
+  const one=feedback[0].stimulus();
+  assert.match(one,/Space was recorded 2 times, first at 1\.2 s/);assert.doesNotMatch(one,/D press/);
+  const two=feedback[1].stimulus();
+  assert.match(two,/No D press was recorded/);
+  added.lastTrial={media_error:null,practice_correct:true,notice_times:[],distracting_times:[0.5]};
+  assert.match(feedback[1].stimulus(),/No Space press was recorded.*D was recorded 1 time, first at 0\.5 s/);
+});
+
 test('legacy deploy identifier remains supported and small/coarse devices are blocked', () => {
   const {context,added}=runtime('?PROLIFIC_ID=legacy');
   context.videoRatingPilotTimeline(preview,fixed,new URLSearchParams('?PROLIFIC_ID=legacy'));
@@ -170,7 +190,7 @@ test('CLI writes a consumer-valid bundle and fails explicitly for insufficient s
     const out=path.join(tmp,'lists.json');const script=path.join(dir,'../scripts/build-lists.js');
     const run=spawnSync(process.execPath,[script,path.join(dir,'pool.json'),out,'--seed','cli']);
     assert.equal(run.status,0,run.stderr.toString());
-    assert.equal(api.validateLists(preview,JSON.parse(fs.readFileSync(out))).main_count,12);
+    assert.equal(api.validateLists(preview,JSON.parse(fs.readFileSync(out))).main_count,11);
     const smaller=spawnSync(process.execPath,[script,path.join(dir,'pool.json'),out,'--main-count','10']);
     assert.equal(smaller.status,0,smaller.stderr.toString());
     assert.equal(api.validateLists(preview,JSON.parse(fs.readFileSync(out))).main_count,10);

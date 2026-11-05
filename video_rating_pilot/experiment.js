@@ -20,14 +20,20 @@ function videoRatingPilotTimeline(pool, bundle, params) {
     '<section class="video-rating-pilot"><h2>Added text and logos</h2><p><strong>Captions or subtitles:</strong> text representing speech, narration or translation.</p>'+
     '<p><strong>Other floating text:</strong> added titles, labels or other words.</p><p><strong>Logos or watermarks:</strong> added branding or channel marks.</p>'+
     '<p>Do not count writing or logos physically in the filmed scene (for example, signs or clothing).</p></section>',
+    '<section class="video-rating-pilot"><h2>While each video plays</h2><p>Rest one hand near the Space bar and the D key. The video keeps playing whenever you press a key, and you can press either key more than once.</p>'+
+    '<p>Press <strong>Space</strong> as soon as you notice captions, other added text or a logo, and again when new ones appear.</p>'+
+    '<p>Press <strong>D</strong> whenever something is distracting or inappropriate.</p>'+
+    '<p>If you miss a moment, keep watching; you will answer questions about the whole clip afterwards.</p></section>',
     '<section class="video-rating-pilot"><h2>After each video</h2><p>First, rate how the clip made you feel: pleasant or unpleasant, and calm or excited. Rate your own feelings, rather than the emotion shown in the clip.</p>'+
     '<p>Next, select any content that may need researcher review before showing the clip to a general audience. Select all that apply, or None of these. Flags do not automatically exclude a clip.</p>'+
     '<p>Finally, answer Yes or No for captions, other floating text, and logos separately.</p>'+
-    '<p>For each Yes, use the frame slider to find an example and drag a tight box around it. Draw more boxes for additional examples; you can use different frames.</p>'+
+    '<p>For each Yes, drag a tight box around an example. If you pressed Space, the first frame shown is from your first press; use the frame slider to find others. Draw more boxes for additional examples; you can use different frames.</p>'+
     '<p>Rate how distracting that category was overall, from 1 (not at all) to 5 (extremely). Something can be present and not distracting.</p>'+
-    '<p>Use a computer with a mouse or trackpad and keep this browser window at its current size.</p></section>'
+    '<p>Use a computer with a keyboard and a mouse or trackpad, and keep this browser window at its current size.</p></section>'
   ]});
-  function trial(clip,stage,index){return {
+  var practicePrompts=['Practice: press Space as soon as you see added text, such as the timecode or the subtitle.',
+    'Practice: press Space for added text again, and press D once to try it. Nothing in this example is distracting.'];
+  function trial(clip,stage,index){var node={
     type:jsPsychVideoRating, heading:stage==='practice'?'Practice '+(index+1)+' of 2':'Video '+(index+1)+' of '+selected.length,
     video_url:videoRatingPool.mediaURL(clip.video_url,base),
     data:{trial_id:'video_rating',exp_stage:stage,clip_id:clip.clip_id,source_id:clip.source_id,
@@ -37,14 +43,22 @@ function videoRatingPilotTimeline(pool, bundle, params) {
     on_finish:function(data){
       if(stage==='practice') data.practice_correct=data.media_error ? null : videoRatingPool.categories.every(function(c){return data.presence[c]===clip.expected_presence[c];});
     }
-  };}
+  };
+  if(stage==='practice') node.prompt=practicePrompts[index];
+  return node;}
+  function pressFeedback(times,label,reminder){
+    return times && times.length ? label+' was recorded '+times.length+(times.length===1?' time':' times')+', first at '+times[0].toFixed(1)+' s.' :
+      'No '+label+' press was recorded. '+reminder;
+  }
   practice.forEach(function(clip,index){
     timeline.push(trial(clip,'practice',index));
     timeline.push({type:jsPsychHtmlButtonResponse, choices:['Continue'],data:{trial_id:'practice_feedback'},stimulus:function(){
       var last=jsPsych.data.get().last(1).values()[0];
       return '<section class="video-rating-pilot"><h2>Practice feedback</h2><p>'+ (last.media_error?'Playback failed; this practice was not scored.':last.practice_correct?'Your presence answers were correct.':'Review the categories before continuing.') +
         '</p><p>'+ (clip.expected_presence.captions?'This example has a subtitle near the bottom.':'This example has no speech captions.')+
-        ' The technical timecode is other floating text. There is no logo or watermark.</p></section>';
+        ' The technical timecode is other floating text. There is no logo or watermark.</p><p>'+
+        pressFeedback(last.notice_times,'Space','In the videos, press Space as soon as you notice captions, other added text or a logo.')+' '+
+        (index===1?pressFeedback(last.distracting_times,'D','In the videos, press D whenever something is distracting or inappropriate.'):'')+'</p></section>';
     }});
   });
   timeline.push({type:jsPsychHtmlButtonResponse,choices:['Begin videos'],data:{trial_id:'test_intro'},
