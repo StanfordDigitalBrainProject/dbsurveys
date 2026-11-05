@@ -123,7 +123,7 @@ function runtime(search='') {
   const context=vm.createContext({URL,URLSearchParams,Map,Set,fetch,
     document:{currentScript:{src:'https://example.org/assets/stimuli.js'}},
     window:{location:{search},innerWidth:1280,innerHeight:720,matchMedia:()=>({matches:true})},
-    jsPsych:{data:{addProperties:p=>Object.assign(added,p)}},
+    jsPsych:{data:{addProperties:p=>Object.assign(added,p),get:()=>({last:()=>({values:()=>[added.lastTrial]})})}},
     jsPsychInstructions:'instructions',jsPsychHtmlButtonResponse:'buttons',jsPsychCallFunction:'call',jsPsychVideoRating:'video'});
   for(const file of ['stimuli.js','pool.js','helpers.js','experiment.js']) vm.runInContext(fs.readFileSync(path.join(dir,file),'utf8'),context);
   return {context,added};
@@ -148,6 +148,28 @@ test('timeline records identifiers, assignments, labels and practice outcomes wi
   assert.equal(result.practice_correct,undefined);assert.equal(main.data.expected_presence,null);
   assert.equal(main.video_url,'https://example.org/assets/'+preview.clips.find(c=>c.clip_id===main.data.clip_id).video_url);
   context.video_rating_pilot_init();assert.equal(context.video_rating_pilot_experiment.length,1);
+});
+
+test('practices and instructions teach captions-only Space and D, and feedback reports recorded presses', () => {
+  const {context,added}=runtime();
+  const timeline=Array.from(context.videoRatingPilotTimeline(preview,fixed,new URLSearchParams()));
+  const pages=timeline.find(t=>t.type==='instructions').pages.join(' ');
+  assert.match(pages,/Press <strong>Space<\/strong> as soon as you notice captions or subtitles[^<]*Do not press Space for other added text or logos/);
+  assert.match(pages,/Press <strong>D<\/strong> whenever something is distracting or inappropriate/);
+  const videos=timeline.filter(t=>t.type==='video');
+  const [first,second]=videos.filter(t=>t.data.exp_stage==='practice');
+  assert.match(first.prompt,/press Space as soon as a caption appears, but not for the timecode/);
+  assert.match(second.prompt,/press Space only for a caption/);assert.match(second.prompt,/press D once/);
+  assert.ok(videos.filter(t=>t.data.exp_stage==='test').every(t=>!('prompt' in t)),'main clips use the plugin default prompt');
+  const feedback=timeline.filter(t=>t.data && t.data.trial_id==='practice_feedback');
+  added.lastTrial={media_error:null,practice_correct:true,notice_times:[1.23,2.5],distracting_times:[]};
+  const one=feedback[0].stimulus();
+  assert.match(one,/Space was recorded 2 times, first at 1\.2 s\. In the videos, press Space as soon as you notice captions or subtitles/);
+  assert.doesNotMatch(one,/D press|D was/);
+  const two=feedback[1].stimulus();
+  assert.match(two,/Space was recorded 2 times.*This example has no captions, so Space was not needed.*No D press was recorded/);
+  added.lastTrial={media_error:null,practice_correct:true,notice_times:[],distracting_times:[0.5]};
+  assert.match(feedback[1].stimulus(),/No Space press was recorded\. This example has no captions.*D was recorded 1 time, first at 0\.5 s/);
 });
 
 test('legacy deploy identifier remains supported and small/coarse devices are blocked', () => {

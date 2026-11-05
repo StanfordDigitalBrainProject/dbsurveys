@@ -16,20 +16,29 @@ var jsPsychVideoRating = (function (jspsych) {
     ['gore_injury', 'Gore or injury'], ['eating_disorder', 'Eating-disorder-related content'],
     ['other_upsetting', 'Other upsetting or triggering content'], ['none', 'None of these']
   ];
+  // Playback keys: presses are timestamped while the clip plays and never pause it.
+  var pressKeys = {
+    Space:{name:'notice', label:'Space', meaning:'captions or subtitles'},
+    KeyD:{name:'distracting', label:'D', meaning:'distracting or inappropriate'}
+  };
   class VideoRatingPlugin {
     constructor(jsPsych) { this.jsPsych = jsPsych; }
     trial(display, trial) {
       var jsPsych = this.jsPsych, started = performance.now(), phase = 'ready';
       var presence = {}, ratings = {}, boxes = [], current = 0, active = [], anchor = null, draft = null;
       var playedThrough = false, mediaError = null, playbackStarted = null, presenceStarted = null, presenceRT = null;
-      var annotationStarted = null, requestedFrame = 0;
+      var annotationStarted = null, requestedFrame = 0, frameSource = null;
+      var presses = {notice:{times:[], rts:[]}, distracting:{times:[], rts:[]}};
       var feelings = null, suitabilityFlags = null, suitabilityNone = null;
       var feelingsStarted = null, suitabilityStarted = null, feelingsRT = null, suitabilityRT = null;
       display.innerHTML = '<section class="video-rating-pilot"><h2></h2>' +
-        '<p class="watch-prompt">Watch the whole clip, then tell us how it made you feel.</p><div class="trial-grid"><div class="video-panel">' +
+        '<p class="watch-prompt"></p><div class="trial-grid"><div class="video-panel">' +
         '<div class="frame"><video playsinline preload="auto" disablepictureinpicture></video>' +
         '<div class="drawing" hidden aria-label="Drag boxes around the selected category"></div></div>' +
-        '<p class="status" role="status" aria-live="polite" tabindex="-1">Click Play when ready.</p>' +
+        '<p class="key-reminder">' + Object.keys(pressKeys).map(function (code) {
+          return '<span class="key key-' + pressKeys[code].name + '"><kbd>' + pressKeys[code].label + '</kbd> ' + pressKeys[code].meaning + '</span>';
+        }).join('') + '</p>' +
+        '<p class="status" role="status" aria-live="polite" tabindex="-1" hidden></p>' +
          '<button class="play">Play video</button></div><div class="question-panel">' +
         '<form class="feelings" hidden><h3>Your own feelings</h3><p>How did watching this clip make <strong>you</strong> feel?</p>' +
         feelingScale('pleasantness', 'How pleasant or unpleasant did you feel?', 'Very unpleasant', 'Very pleasant') +
@@ -60,11 +69,15 @@ var jsPsychVideoRating = (function (jspsych) {
       var q = function (s) {return display.querySelector(s);};
       var video = q('video'), drawing = q('.drawing');
       q('h2').textContent = trial.heading;
-      function status(text) {q('.status').textContent = text;}
+      q('.watch-prompt').textContent = trial.prompt;
+      // The status line stays hidden before playback so the Play screen fits the shortest window.
+      function status(text) {q('.status').textContent = text; q('.status').hidden = false;}
       function finish() {
         if (phase === 'finished') return;
-        phase = 'finished'; video.pause();
-        jsPsych.finishTrial({feelings:feelings, suitability_flags:suitabilityFlags,
+        phase = 'finished'; video.pause(); document.removeEventListener('keydown', onKey);
+        jsPsych.finishTrial({notice_times:presses.notice.times, notice_rts_ms:presses.notice.rts,
+          distracting_times:presses.distracting.times, distracting_rts_ms:presses.distracting.rts,
+          annotation_frame_source:frameSource,feelings:feelings, suitability_flags:suitabilityFlags,
           suitability_none:suitabilityNone,
           feelings_rt_ms:feelingsRT, suitability_rt_ms:suitabilityRT,
           presence:presence, distraction:ratings, boxes:boxes,
@@ -78,18 +91,31 @@ var jsPsychVideoRating = (function (jspsych) {
         if (phase === 'finished') return;
         mediaError = mediaError || (video.error ? 'media_error_'+video.error.code : 'playback_failed');
         phase = 'error'; video.pause();
-        ['.play','.feelings','.suitability','.presence','.annotation','.drawing'].forEach(function (s) {q(s).hidden=true;});
+        ['.play','.key-reminder','.feelings','.suitability','.presence','.annotation','.drawing'].forEach(function (s) {q(s).hidden=true;});
         q('.error').hidden=false; status('Playback problem. Retry or continue without rating.');
       }
+      function onKey(event) {
+        var key=pressKeys[event.code];
+        if(!key || phase!=='watch') return;
+        event.preventDefault();
+        // Held keys auto-repeat; presses before playback starts are ignored.
+        if(event.repeat || playbackStarted===null || video.paused || video.ended) return;
+        presses[key.name].times.push(video.currentTime);
+        presses[key.name].rts.push(performance.now()-playbackStarted);
+        var chip=q('.key-'+key.name);
+        chip.classList.remove('pressed'); void chip.offsetWidth; chip.classList.add('pressed');
+        status(key.label+' recorded. Keep watching until the video ends.');
+      }
+      document.addEventListener('keydown', onKey);
       q('.play').onclick = async function () {
-        phase='watch'; q('.play').hidden=true; status('Please watch until the video ends.');
+        phase='watch'; q('.play').hidden=true; status('Please watch until the video ends. Press Space or D at any time.');
         try {await video.play();} catch (_) {playbackError();}
       };
       video.addEventListener('playing', function () {if(playbackStarted===null) playbackStarted=performance.now();});
       video.addEventListener('error', playbackError);
       video.addEventListener('ended', function () {
         if(phase!=='watch') return;
-        playedThrough=true; phase='feelings'; feelingsStarted=performance.now();
+        playedThrough=true; phase='feelings'; feelingsStarted=performance.now(); q('.key-reminder').hidden=true;
         q('.feelings').hidden=false; status('First, rate your own feelings.'); q('.status').focus();
       });
       function sizePicture() {
@@ -141,9 +167,13 @@ var jsPsychVideoRating = (function (jspsych) {
       function frameReady() {
         if(phase!=='draw' || video.seeking || video.readyState<2) return;
         if(Math.abs(video.currentTime-requestedFrame)>0.1) {mediaError='annotation_seek_failed'; playbackError(); return;}
-        drawing.hidden=false; renderBoxes(); status('Drag a box around '+categories[current].label.toLowerCase()+'.');
+        drawing.hidden=false; renderBoxes();
+        status((captionsFromNotice() && requestedFrame===firstNoticeFrame() ? 'This is the frame at your first Space press. ' : '')+
+          'Drag a box around '+categories[current].label.toLowerCase()+'.');
       }
       video.addEventListener('seeked', frameReady); video.addEventListener('loadeddata', frameReady);
+      function captionsFromNotice() {return categories[current].id==='captions' && frameSource==='first_notice';}
+      function firstNoticeFrame() {return Math.min(presses.notice.times[0],Math.max(0,video.duration-0.05));}
       function seek(time) {
         anchor=null; draft=null; drawing.hidden=true;
         requestedFrame=Math.min(time,Math.max(0,video.duration-0.05));
@@ -156,13 +186,15 @@ var jsPsychVideoRating = (function (jspsych) {
         phase='draw'; active=[]; anchor=null; draft=null;
         q('.annotation').reset(); q('.annotation').hidden=false;
         q('.category-title').textContent='Locate: '+categories[current].label;
-        q('.seek').max=Math.max(0,video.duration-0.05); seek(0);
+        q('.seek').max=Math.max(0,video.duration-0.05);
+        seek(captionsFromNotice() ? presses.notice.times[0] : 0);
       }
       q('.presence').onsubmit=function (event) {
         event.preventDefault(); if(phase!=='presence' || !q('.presence').reportValidity()) return;
         categories.forEach(function (c) {presence[c.id]=q('input[name="'+c.id+'"]:checked').value==='yes'; ratings[c.id]=null;});
         presenceRT=performance.now()-presenceStarted; q('.presence').hidden=true;
         annotationStarted=categories.some(function(c){return presence[c.id];}) ? performance.now() : null;
+        if(presence.captions) frameSource=presses.notice.times.length ? 'first_notice' : 'clip_start';
         nextCategory();
       };
       q('.seek').oninput=function(){seek(Number(q('.seek').value));};
@@ -199,17 +231,18 @@ var jsPsychVideoRating = (function (jspsych) {
         current++; nextCategory();
       };
       q('.skip').onclick=function(){
-        feelings=null; suitabilityFlags=null; suitabilityNone=null;
+        feelings=null; suitabilityFlags=null; suitabilityNone=null; frameSource=null;
         categories.forEach(function(c){presence[c.id]=null; ratings[c.id]=null;}); boxes=[]; finish();
       };
       q('.retry').onclick=function(){
         phase='ready'; mediaError=null; playedThrough=false; playbackStarted=null; presenceStarted=null;
-        presenceRT=null; annotationStarted=null; presence={}; ratings={}; boxes=[]; active=[]; current=0; anchor=null; draft=null;
+        presenceRT=null; annotationStarted=null; frameSource=null; presence={};
+        presses={notice:{times:[], rts:[]}, distracting:{times:[], rts:[]}}; q('.key-reminder').hidden=false; ratings={}; boxes=[]; active=[]; current=0; anchor=null; draft=null;
         feelings=null; suitabilityFlags=null; suitabilityNone=null;
         feelingsStarted=null; suitabilityStarted=null; feelingsRT=null; suitabilityRT=null;
         q('.feelings').reset(); q('.suitability').reset(); q('.suitability-next').disabled=true;
         q('.presence').reset(); q('.annotation').reset(); q('.error').hidden=true; q('.play').hidden=false;
-        video.load(); status('Click Play to retry from the beginning.');
+        video.load(); q('.status').hidden=true;
       };
       // Attach error handling before assigning src (cached media can fail immediately).
       video.src=trial.video_url;
@@ -217,7 +250,8 @@ var jsPsychVideoRating = (function (jspsych) {
   }
   VideoRatingPlugin.info={name:'video-rating',parameters:{
     video_url:{type:jspsych.ParameterType.STRING,default:undefined},
-    heading:{type:jspsych.ParameterType.STRING,default:'Video'}
+    heading:{type:jspsych.ParameterType.STRING,default:'Video'},
+    prompt:{type:jspsych.ParameterType.STRING,default:'Watch the whole clip. Press Space or D whenever they apply; the video keeps playing.'}
   }};
   return VideoRatingPlugin;
 })(jsPsychModule);
