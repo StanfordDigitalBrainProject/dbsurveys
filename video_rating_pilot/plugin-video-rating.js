@@ -18,7 +18,7 @@ var jsPsychVideoRating = (function (jspsych) {
   ];
   // Playback keys: presses are timestamped while the clip plays and never pause it.
   var pressKeys = {
-    Space:{name:'notice', label:'Space', meaning:'captions, added text or logo'},
+    Space:{name:'notice', label:'Space', meaning:'captions or subtitles'},
     KeyD:{name:'distracting', label:'D', meaning:'distracting or inappropriate'}
   };
   class VideoRatingPlugin {
@@ -168,10 +168,11 @@ var jsPsychVideoRating = (function (jspsych) {
         if(phase!=='draw' || video.seeking || video.readyState<2) return;
         if(Math.abs(video.currentTime-requestedFrame)>0.1) {mediaError='annotation_seek_failed'; playbackError(); return;}
         drawing.hidden=false; renderBoxes();
-        status((frameSource==='first_notice' && requestedFrame===firstNoticeFrame() ? 'This is the frame at your first Space press. ' : '')+
+        status((captionsFromNotice() && requestedFrame===firstNoticeFrame() ? 'This is the frame at your first Space press. ' : '')+
           'Drag a box around '+categories[current].label.toLowerCase()+'.');
       }
       video.addEventListener('seeked', frameReady); video.addEventListener('loadeddata', frameReady);
+      function captionsFromNotice() {return categories[current].id==='captions' && frameSource==='first_notice';}
       function firstNoticeFrame() {return Math.min(presses.notice.times[0],Math.max(0,video.duration-0.05));}
       function seek(time) {
         anchor=null; draft=null; drawing.hidden=true;
@@ -186,14 +187,14 @@ var jsPsychVideoRating = (function (jspsych) {
         q('.annotation').reset(); q('.annotation').hidden=false;
         q('.category-title').textContent='Locate: '+categories[current].label;
         q('.seek').max=Math.max(0,video.duration-0.05);
-        seek(frameSource==='first_notice' ? presses.notice.times[0] : 0);
+        seek(captionsFromNotice() ? presses.notice.times[0] : 0);
       }
       q('.presence').onsubmit=function (event) {
         event.preventDefault(); if(phase!=='presence' || !q('.presence').reportValidity()) return;
         categories.forEach(function (c) {presence[c.id]=q('input[name="'+c.id+'"]:checked').value==='yes'; ratings[c.id]=null;});
         presenceRT=performance.now()-presenceStarted; q('.presence').hidden=true;
         annotationStarted=categories.some(function(c){return presence[c.id];}) ? performance.now() : null;
-        if(annotationStarted!==null) frameSource=presses.notice.times.length ? 'first_notice' : 'clip_start';
+        if(presence.captions) frameSource=presses.notice.times.length ? 'first_notice' : 'clip_start';
         nextCategory();
       };
       q('.seek').oninput=function(){seek(Number(q('.seek').value));};
@@ -230,7 +231,7 @@ var jsPsychVideoRating = (function (jspsych) {
         current++; nextCategory();
       };
       q('.skip').onclick=function(){
-        feelings=null; suitabilityFlags=null; suitabilityNone=null;
+        feelings=null; suitabilityFlags=null; suitabilityNone=null; frameSource=null;
         categories.forEach(function(c){presence[c.id]=null; ratings[c.id]=null;}); boxes=[]; finish();
       };
       q('.retry').onclick=function(){
