@@ -30,7 +30,13 @@ const captionState = c => (c.predicted_labels || {}).captions;
 
 test('seeded lists balance caption predictions, spread other labels, use distinct sources and spread channels', () => {
   const pool = largePool();
-  assert.equal(buildLists(pool).main_count,12);
+  const defaults = buildLists(pool);
+  assert.equal(defaults.main_count,16);
+  const lookup = new Map(pool.clips.map(c => [c.clip_id,c]));
+  for (const list of defaults.lists) {
+    const captioned = list.clip_ids.filter(id => lookup.get(id).predicted_labels.captions).length;
+    assert.equal(captioned,8,'the default count splits evenly between captioned and not captioned');
+  }
   const bundle = buildLists(pool,{seed:'proof',listCount:4,mainCount:24});
   assert.deepEqual(bundle.strata,['captioned','not_captioned']);
   assert.deepEqual(bundle,buildLists(pool,{seed:'proof',listCount:4,mainCount:24}));
@@ -60,7 +66,7 @@ test('seeded lists balance caption predictions, spread other labels, use distinc
 test('caption-only predictions balance captioned, not captioned and unknown clips', () => {
   const pool = poolWith('caption-only-fixture',90,i => i<15 ? {captions:true} : i<30 ? {captions:false} :
     i%2 ? {captions:null} : undefined);
-  const bundle = buildLists(pool);
+  const bundle = buildLists(pool,{mainCount:12});
   assert.equal(bundle.main_count,12);
   assert.deepEqual(bundle.strata,['captioned','not_captioned','unknown']);
   const byId = new Map(pool.clips.map(c => [c.clip_id,c]));
@@ -79,9 +85,9 @@ test('preview is reproducible, one source per list, and cannot silently shrink a
   assert.throws(()=>buildLists(preview,{mainCount:18}),/Not enough distinct sources/);
   for(const list of fixed.lists) {
     const mains = list.clip_ids.map(id=>preview.clips.find(c=>c.clip_id===id));
-    assert.equal(mains.length,12);
+    assert.equal(mains.length,16);
     assert.ok(mains.every(c=>!preview.practice_ids.includes(c.clip_id)));
-    assert.equal(new Set(mains.map(c=>c.source_id)).size,12);
+    assert.equal(new Set(mains.map(c=>c.source_id)).size,16);
     assert.ok(mains.every(c=>c.license==='CC BY' && c.predicted_labels.captions===null));
   }
   for(const clip of preview.clips) assert.ok(fs.statSync(path.join(dir,clip.video_url)).size>0);
@@ -192,7 +198,7 @@ test('CLI writes a consumer-valid bundle and fails explicitly for insufficient s
     const out=path.join(tmp,'lists.json');const script=path.join(dir,'../scripts/build-lists.js');
     const run=spawnSync(process.execPath,[script,path.join(dir,'pool.json'),out,'--seed','cli']);
     assert.equal(run.status,0,run.stderr.toString());
-    assert.equal(api.validateLists(preview,JSON.parse(fs.readFileSync(out))).main_count,12);
+    assert.equal(api.validateLists(preview,JSON.parse(fs.readFileSync(out))).main_count,16);
     const smaller=spawnSync(process.execPath,[script,path.join(dir,'pool.json'),out,'--main-count','10']);
     assert.equal(smaller.status,0,smaller.stderr.toString());
     assert.equal(api.validateLists(preview,JSON.parse(fs.readFileSync(out))).main_count,10);

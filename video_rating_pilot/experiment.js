@@ -24,9 +24,7 @@ function videoRatingPilotTimeline(pool, bundle, params) {
     '<p>Press <strong>Space</strong> as soon as you notice captions or subtitles: text showing what is said or heard. Do not press Space for other added text or logos; you will mark those after the video.</p>'+
     '<p>Press <strong>D</strong> whenever something is distracting or inappropriate.</p>'+
     '<p>If you miss a moment, keep watching; you will answer questions about the whole clip afterwards.</p></section>',
-    '<section class="video-rating-pilot"><h2>After each video</h2><p>First, rate how the clip made you feel: pleasant or unpleasant, and calm or excited. Rate your own feelings, rather than the emotion shown in the clip.</p>'+
-    '<p>Next, select any content that may need researcher review before showing the clip to a general audience. Select all that apply, or None of these. Flags do not automatically exclude a clip.</p>'+
-    '<p>Finally, answer Yes or No for captions, other floating text, and logos separately.</p>'+
+    '<section class="video-rating-pilot"><h2>After each video</h2><p>Answer Yes or No for captions, other floating text, and logos separately.</p>'+
     '<p>For each Yes, use the frame slider to find an example and drag a tight box around it. For captions, if you pressed Space, the first frame shown is from your first press. Draw more boxes for additional examples; you can use different frames.</p>'+
     '<p>Rate how distracting that category was overall, from 1 (not at all) to 5 (extremely). Something can be present and not distracting.</p>'+
     '<p>Use a computer with a keyboard and a mouse or trackpad, and keep this browser window at its current size.</p></section>'

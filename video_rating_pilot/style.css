@@ -18,12 +18,10 @@
 .video-rating-pilot fieldset { border: 1px solid #a9b4c2; border-radius: 5px; margin: 10px 0; padding: 8px 12px; min-width: 0; }
 .video-rating-pilot legend { font-weight: 600; padding: 0 4px; }
 .video-rating-pilot label { display: inline-block; padding: 6px; }
-.video-rating-pilot input[type=radio], .video-rating-pilot input[type=checkbox] { margin: 0 6px 0 0; }
+.video-rating-pilot input[type=radio] { margin: 0 6px 0 0; }
 .video-rating-pilot .scale { display: flex; justify-content: space-between; gap: 2px; }
 .video-rating-pilot .scale label { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; padding: 10px 4px; cursor: pointer; }
 .video-rating-pilot .scale input { margin: 0; }
-.video-rating-pilot .scale-ends { display: flex; justify-content: space-between; font-size: 15px; }
-.video-rating-pilot .flag { display: block; }
 .video-rating-pilot .hint { font-size: 15px; }
 .video-rating-pilot .distraction .scale label { padding: 6px 2px; gap: 2px; }
 .video-rating-pilot .presence fieldset { display: flex; align-items: center; gap: 8px; }
